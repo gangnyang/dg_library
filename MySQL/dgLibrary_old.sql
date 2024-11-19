@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 8.0.38, for Win64 (x86_64)
 --
--- Host: localhost    Database: dglibrary
+-- Host: localhost    Database: dg_library
 -- ------------------------------------------------------
 -- Server version	8.0.39
 
@@ -30,13 +30,7 @@ CREATE TABLE `books` (
   `regist_day` datetime DEFAULT NULL,
   `status` enum('available','borrowed') DEFAULT NULL,
   `borrowed` int DEFAULT '0',
-  `isbn` varchar(20) DEFAULT NULL,
-  `interloaned_from_external` tinyint(1) DEFAULT '0',
-  `return_due_external` date DEFAULT NULL,
-  `external_book_id` int DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `isbn` (`isbn`),
-  KEY `external_book_id` (`external_book_id`)
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -93,9 +87,7 @@ CREATE TABLE `external_books` (
   `publicate_year` varchar(100) DEFAULT NULL,
   `regist_day` datetime DEFAULT NULL,
   `status` enum('available','borrowed') DEFAULT NULL,
-  `isbn` varchar(20) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `isbn` (`isbn`)
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -117,15 +109,13 @@ DROP TABLE IF EXISTS `interloan`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `interloan` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `user_id` int NOT NULL,
-  `external_book_id` int NOT NULL,
-  `request_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `status` enum('request','progress','complete') DEFAULT NULL,
+  `book_id` int NOT NULL,
+  `requested_time` timestamp NULL DEFAULT NULL,
+  `received` date DEFAULT NULL,
+  `returned` date DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `user_id` (`user_id`),
-  KEY `external_book_id` (`external_book_id`),
-  CONSTRAINT `interloan_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
-  CONSTRAINT `interloan_ibfk_2` FOREIGN KEY (`external_book_id`) REFERENCES `external_books` (`id`)
+  KEY `book_id` (`book_id`),
+  CONSTRAINT `interloan_ibfk_1` FOREIGN KEY (`book_id`) REFERENCES `external_books` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -174,6 +164,7 @@ CREATE TABLE `loan` (
   `id` int NOT NULL AUTO_INCREMENT,
   `user_id` int NOT NULL,
   `book_id` int NOT NULL,
+  `interloan_id` int DEFAULT NULL,
   `loan_date` date DEFAULT NULL,
   `will_return_date` date DEFAULT NULL,
   `returned_date` date DEFAULT NULL,
@@ -182,8 +173,10 @@ CREATE TABLE `loan` (
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),
   KEY `book_id` (`book_id`),
+  KEY `interloan_id` (`interloan_id`),
   CONSTRAINT `loan_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
-  CONSTRAINT `loan_ibfk_2` FOREIGN KEY (`book_id`) REFERENCES `books` (`id`)
+  CONSTRAINT `loan_ibfk_2` FOREIGN KEY (`book_id`) REFERENCES `books` (`id`),
+  CONSTRAINT `loan_ibfk_3` FOREIGN KEY (`interloan_id`) REFERENCES `interloan` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -315,4 +308,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2024-11-19 12:54:03
+-- Dump completed on 2024-11-19  1:30:24
