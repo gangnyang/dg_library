@@ -1,11 +1,14 @@
-from fastapi import FastAPI, HTTPException, Depends, Query
+from fastapi import FastAPI, HTTPException, APIRouter, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.sql import text
 from back.app.services import token
 from datetime import datetime, timedelta
+
+router = APIRouter()
 
 # MySQL 데이터베이스 연결 정보
 DATABASE_URL = "mysql+pymysql://root:sang8429@localhost:3306/dg_library"
@@ -14,8 +17,6 @@ DATABASE_URL = "mysql+pymysql://root:sang8429@localhost:3306/dg_library"
 engine = create_engine(DATABASE_URL)
 Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
-
-app = FastAPI()
 
 class ProgramRequest(BaseModel):
     name: str
@@ -29,16 +30,16 @@ def get_db():
     finally:
         db.close()
 
-@app.get("/api/programs")
+@router.get("/api/programs")
 def get_programs(limit: int = 20, db: Session = Depends(get_db)):
     try:
         # 도서관 프로그램 조회 쿼리
-        query = """
+        query = text("""
         SELECT id, name, description, event_date, participants
         FROM programs
         ORDER BY event_date ASC
         LIMIT :limit
-        """
+        """)
         results = db.execute(query, {"limit": limit}).fetchall()
 
         # 결과를 JSON 형식으로 변환
@@ -61,15 +62,15 @@ def get_programs(limit: int = 20, db: Session = Depends(get_db)):
             detail="프로그램 정보를 가져오는 중 오류가 발생했습니다."
         )
     
-@app.post("/api/library-programs")
+@router.post("/api/library-programs")
 def create_program(program: ProgramRequest, db: Session = Depends(get_db)):
     try:
         # 도서관 프로그램 삽입 쿼리
-        query = """
+        query = text("""
         INSERT INTO programs (name, description, event_date)
         VALUES (:name, :description, :event_date)
         RETURNING id
-        """
+        """)
         result = db.execute(query, {
             "name": program.name,
             "description": program.description,
@@ -90,15 +91,15 @@ def create_program(program: ProgramRequest, db: Session = Depends(get_db)):
             detail="프로그램 생성 중 오류가 발생했습니다."
         )
     
-@app.delete("/api/programs/{program_id}")
+@router.delete("/api/programs/{program_id}")
 def delete_program(
     program_id: int,
     db: Session = Depends(get_db)
 ):
     try:
-        query_check_program = """
+        query_check_program = text("""
         SELECT id FROM programs WHERE id = :program_id
-        """
+        """)
         librarian = db.execute(query_check_program, {"program_id": program_id}).fetchone()
 
         if not librarian:
@@ -107,9 +108,9 @@ def delete_program(
                 detail="해당 프로그램을 찾을 수 없습니다."
             )
 
-        query_delete_program = """
+        query_delete_program = text("""
         DELETE FROM programs WHERE id = :program_id
-        """
+        """)
         db.execute(query_delete_program, {"program_id": program_id})
         db.commit()
 
@@ -122,16 +123,16 @@ def delete_program(
             detail="프로그램을 삭제하는 중 오류가 발생했습니다."
         )
 
-@app.get("/api/programs/{program_id}/participants")
+@router.get("/api/programs/{program_id}/participants")
 def get_program_participants(program_id: int, db: Session = Depends(get_db)):
     try:
         # 프로그램 참가자 조회 쿼리
-        query = """
+        query = text("""
         SELECT id, program_id, user_id, joined
         FROM program_participants
         WHERE program_id = :program_id
         ORDER BY joined ASC
-        """
+        """)
         results = db.execute(query, {"program_id": program_id}).fetchall()
 
         # 결과를 JSON 형식으로 변환
@@ -153,7 +154,7 @@ def get_program_participants(program_id: int, db: Session = Depends(get_db)):
             detail="프로그램 참가자 정보를 가져오는 중 오류가 발생했습니다."
         )
 
-@app.post("/api/programs/{program_id}/participants")
+@router.post("/api/programs/{program_id}/participants")
 def register_participant(
     program_id: int,
     db: Session = Depends(get_db),
@@ -161,7 +162,7 @@ def register_participant(
 ):
     try:
         user_id = db.execute(
-            "SELECT id FROM users WHERE username = :username",
+            text("SELECT id FROM users WHERE username = :username"),
             {"username": current_user}
         ).fetchone()
 
@@ -172,9 +173,9 @@ def register_participant(
         )
 
         # 프로그램 존재 여부 확인
-        query_check_program = """
+        query_check_program = text("""
         SELECT id FROM programs WHERE id = :program_id
-        """
+        """)
         program = db.execute(query_check_program, {"program_id": program_id}).fetchone()
 
         if not program:
@@ -184,10 +185,10 @@ def register_participant(
             )
 
         # 참가자 중복 등록 확인
-        query_check_participant = """
+        query_check_participant = text("""
         SELECT id FROM program_participants
         WHERE program_id = :program_id AND user_id = :user_id
-        """
+        """)
         existing_participant = db.execute(query_check_participant, {
             "program_id": program_id,
             "user_id": user_id
@@ -200,10 +201,10 @@ def register_participant(
             )
 
         # 참가자 등록
-        query_insert_participant = """
+        query_insert_participant = text("""
         INSERT INTO program_participants (program_id, user_id, joined)
         VALUES (:program_id, :user_id, :joined)
-        """
+        """)
         db.execute(query_insert_participant, {
             "program_id": program_id,
             "user_id": user_id,
@@ -221,15 +222,15 @@ def register_participant(
             detail="참가자 등록 중 오류가 발생했습니다."
         )
 
-@app.get("/api/programs/{program_id}/librarians")
+@router.get("/api/programs/{program_id}/librarians")
 def get_program_librarians(program_id: int, db: Session = Depends(get_db)):
     try:
         # 프로그램 담당자 조회 쿼리
-        query = """
+        query = text("""
         SELECT id, program_id, librarian_id
         FROM program_librarians 
         WHERE program_id = :program_id
-        """
+        """)
         results = db.execute(query, {"program_id": program_id}).fetchall()
 
         # 결과를 JSON 형식으로 변환
@@ -250,16 +251,16 @@ def get_program_librarians(program_id: int, db: Session = Depends(get_db)):
             detail="프로그램 담당자 정보를 가져오는 중 오류가 발생했습니다."
         )
     
-@app.post("/api/programs/{program_id}/librarians")
+@router.post("/api/programs/{program_id}/librarians")
 def register_librarian(
     program_id: int,
     librarian_id: int,
     db: Session = Depends(get_db)
 ):
     try:
-        query_check_librarian = """
+        query_check_librarian = text("""
         SELECT id FROM librarians WHERE id = :librarian_id
-        """
+        """)
         librarian = db.execute(query_check_librarian, {"librarian_id": librarian_id}).fetchone()
         if not librarian:
             raise HTTPException(
@@ -267,9 +268,9 @@ def register_librarian(
                 detail="해당 담당자를 찾을 수 없습니다."
             )
         # 프로그램 존재 여부 확인
-        query_check_program = """
+        query_check_program = text("""
         SELECT id FROM programs WHERE id = :program_id
-        """
+        """)
         program = db.execute(query_check_program, {"program_id": program_id}).fetchone()
 
         if not program:
@@ -279,10 +280,10 @@ def register_librarian(
             )
 
         # 담당자 중복 등록 확인
-        query_check_participant = """
+        query_check_participant = text("""
         SELECT id FROM program_librarians
         WHERE program_id = :program_id AND librarian_id = :librarian_id
-        """
+        """)
         existing_librarian = db.execute(query_check_participant, {
             "program_id": program_id,
             "librarian_id": librarian_id
@@ -295,10 +296,10 @@ def register_librarian(
             )
 
         # 담당자 등록
-        query_insert_librarian = """
+        query_insert_librarian = text("""
         INSERT INTO program_librarians (program_id, librarian_id)
         VALUES (:program_id, :librarian_id)
-        """
+        """)
         db.execute(query_insert_librarian, {
             "program_id": program_id,
             "librarian_id": librarian_id

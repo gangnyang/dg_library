@@ -1,11 +1,14 @@
-from fastapi import FastAPI, HTTPException, Depends, Query
+from fastapi import FastAPI, HTTPException, APIRouter, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.sql import text
 from back.app.services import token
 from datetime import datetime
+
+router = APIRouter()
 
 # MySQL 데이터베이스 연결 정보
 DATABASE_URL = "mysql+pymysql://root:sang8429@localhost:3306/dg_library"
@@ -15,8 +18,6 @@ engine = create_engine(DATABASE_URL)
 Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-app = FastAPI()
-
 def get_db():
     db = Session()
     try:
@@ -24,7 +25,7 @@ def get_db():
     finally:
         db.close()
 
-@app.post("/api/comments")
+@router.post("/api/comments")
 def get_comments(
     book_id: int,
     limit: int = 20,
@@ -32,13 +33,13 @@ def get_comments(
 ):
     try:
         # 최상위 댓글 가져오기 (parent_id가 NULL인 댓글)
-        query = """
+        query = text("""
         SELECT id, book_id, user_id, parent_id, context, created, updated
         FROM comments
         WHERE book_id = :book_id AND parent_id IS NULL
         ORDER BY created DESC
         LIMIT :limit
-        """
+        """)
         top_comments = db.execute(query, {"book_id": book_id, "limit": limit}).fetchall()
 
         # 최상위 댓글의 ID 목록 가져오기
@@ -46,12 +47,12 @@ def get_comments(
 
         # 대댓글 가져오기 (parent_id가 상위 댓글 ID 중 하나인 경우)
         if parent_ids:
-            query_replies = """
+            query_replies = text("""
             SELECT id, book_id, user_id, parent_id, context, created, updated
             FROM comments
             WHERE parent_id IN :parent_ids
             ORDER BY created ASC
-            """
+            """)
             replies = db.execute(query_replies, {"parent_ids": tuple(parent_ids)}).fetchall()
         else:
             replies = []
@@ -90,7 +91,7 @@ def get_comments(
             detail="댓글을 가져오는 중 오류가 발생했습니다."
         )
 
-@app.post("/api/comments/add")
+@router.post("/api/comments/add")
 def create_comment(
     book_id: int,
     parent_id: int | None,
@@ -102,7 +103,7 @@ def create_comment(
         # 현재 시간 가져오기
         current_time = datetime.utcnow()
         user_id = db.execute(
-            "SELECT id FROM users WHERE username = :username",
+            text("SELECT id FROM users WHERE username = :username"),
             {"username": current_user}
         ).fetchone()
         if not user_id:
@@ -111,10 +112,10 @@ def create_comment(
                 detail="댓글을 작성하려면 로그인해야 합니다."
             )
         # 댓글 삽입
-        query_insert_comment = """
+        query_insert_comment = text("""
         INSERT INTO comments (book_id, user_id, parent_id, context, created, updated)
         VALUES (:book_id, :user_id, :parent_id, :context, :created, :updated)
-        """
+        """)
         db.execute(query_insert_comment, {
             "book_id": book_id,
             "user_id": user_id,
@@ -139,7 +140,7 @@ def create_comment(
             detail="댓글 작성 중 오류가 발생했습니다."
         )
 
-@app.put("/api/comments/{comment_id}")
+@router.put("/api/comments/{comment_id}")
 def update_comment(
     comment_id: int,
     context: str,
@@ -148,15 +149,15 @@ def update_comment(
 ):
     try:
         # 댓글 존재 여부 및 작성자 확인
-        query_check_comment = """
+        query_check_comment = text("""
         SELECT id, user_id, created
         FROM comments
         WHERE id = :comment_id
-        """
+        """)
         comment = db.execute(query_check_comment, {"comment_id": comment_id}).fetchone()
 
         user_id = db.execute(
-            "SELECT id FROM users WHERE username = :username",
+            text("SELECT id FROM users WHERE username = :username"),
             {"username": current_user}
         ).fetchone()
 
@@ -174,11 +175,11 @@ def update_comment(
 
         # 댓글 내용 업데이트
         current_time = datetime.utcnow()
-        query_update_comment = """
+        query_update_comment = text("""
         UPDATE comments
         SET context = :context, updated = :updated
         WHERE id = :comment_id
-        """
+        """)
         db.execute(query_update_comment, {
             "context": context,
             "updated": current_time,
@@ -200,7 +201,7 @@ def update_comment(
             detail="댓글 수정 중 오류가 발생했습니다."
         )
     
-@app.delete("/api/comments/{comment_id}")
+@router.delete("/api/comments/{comment_id}")
 def delete_comment(
     comment_id: int,
     db: Session = Depends(get_db),
@@ -208,15 +209,15 @@ def delete_comment(
 ):
     try:
         user_id = db.execute(
-            "SELECT id FROM users WHERE username = :username",
+            text("SELECT id FROM users WHERE username = :username"),
             {"username": current_user}
         ).fetchone()
 
-        query_check_comment = """
+        query_check_comment = text("""
         SELECT id, user_id, created
         FROM comments
         WHERE id = :comment_id
-        """
+        """)
         comment = db.execute(query_check_comment, {"comment_id": comment_id}).fetchone()
 
         if not comment:
@@ -230,10 +231,10 @@ def delete_comment(
                 detail="댓글을 삭제할 권한이 없습니다."
             )
         
-        query_delete_comment = """
+        query_delete_comment = text("""
         DELETE from comments
         WHERE id = :comment_id
-        """
+        """)
 
         db.execute(query_delete_comment, {
             "comment_id": comment_id

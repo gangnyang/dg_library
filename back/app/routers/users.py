@@ -1,11 +1,14 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.sql import text
 from back.app.services import token
 from back.app.services import hash
+
+router = APIRouter()
 
 # MySQL 데이터베이스 연결 정보
 DATABASE_URL = "mysql+pymysql://root:sang8429@localhost:3306/dg_library"
@@ -14,8 +17,6 @@ DATABASE_URL = "mysql+pymysql://root:sang8429@localhost:3306/dg_library"
 engine = create_engine(DATABASE_URL)
 Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
-
-app = FastAPI()
 
 class UserRequest(BaseModel):
     username: str
@@ -35,25 +36,25 @@ def get_db():
         db.close()
 
 # 회원가입 API 엔드포인트
-@app.post("/api/users", response_model=UserResponse)
+@router.post("/api/users", response_model=UserResponse)
 def register_user(user: UserRequest, db: Session = Depends(get_db)):
     try:
         # 데이터 삽입 쿼리 실행
-        query = """
+        query = text("""
         INSERT INTO users (username, password, phone, name)
         VALUES (:username, :password, :phone, :name)
-        """
+        """)
         hashed = hash.hash_password(user.password)
         db.execute(query, {
             "username": user.username,
-            "password": hashed,  # 실제로는 비밀번호 해싱 필요
+            "password": hashed,
             "phone": user.phone,
             "name": user.name
         })
         db.commit()
 
         # 삽입된 사용자 ID 가져오기
-        result = db.execute("SELECT LAST_INSERT_ID() as id")
+        result = db.execute(text("SELECT LAST_INSERT_ID() as id"))
         user_id = result.fetchone()["id"]
 
     except IntegrityError:
@@ -65,11 +66,11 @@ def register_user(user: UserRequest, db: Session = Depends(get_db)):
 
     return {"user_id": user_id, "message": "회원가입에 성공했습니다."}
 
-@app.post("/api/users/login")
+@router.post("/api/users/login")
 def login(user: UserRequest, db: Session = Depends(get_db)):
     # 사용자 검색
     db_user = db.execute(
-        "SELECT * FROM users WHERE username = :username",
+        text("SELECT * FROM users WHERE username = :username"),
         {"username": user.username}
     ).fetchone()
 
@@ -94,7 +95,7 @@ def login(user: UserRequest, db: Session = Depends(get_db)):
         "token": access_token
     }
 
-@app.put("/api/users/update")
+@router.put("/api/users/update")
 def update(
     updated_user: UserRequest,
     db: Session = Depends(get_db),
@@ -107,10 +108,10 @@ def update(
         )
 
     try:
-        query = """
+        query = text("""
         UPDATE users
         SET password = :password, phone = :phone, name = :name WHERE username = :username
-        """
+        """)
         db.execute(query, {
             "password": hash.hash_password(updated_user.password),
             "phone": updated_user.phone,
@@ -126,14 +127,14 @@ def update(
             detail = "회원정보를 수정하지 못했습니다."
         )
 
-@app.delete("/api/users/delete")
+@router.delete("/api/users/delete")
 def withdraw(
     db: Session = Depends(get_db),
     current_user: str = Depends(token.get_current_user)
 ):
     try:
         id = db.execute(
-            "SELECT id FROM users WHERE username = :username",
+            text("SELECT id FROM users WHERE username = :username"),
             {"username": current_user}
         ).fetchone()
 
@@ -143,10 +144,10 @@ def withdraw(
                 detail="탈퇴하려는 계정이 존재하지 않습니다."
             )
 
-        query = """
+        query = text("""
         DELETE from users
         WHERE username = :username
-        """
+        """)
 
         db.execute(query, {
             "username": current_user

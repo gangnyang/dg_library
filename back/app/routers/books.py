@@ -1,10 +1,13 @@
-from fastapi import FastAPI, HTTPException, Depends, Query
+from fastapi import FastAPI, HTTPException, APIRouter, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.sql import text
 from back.app.services import token
+
+router = APIRouter()
 
 # MySQL 데이터베이스 연결 정보
 DATABASE_URL = "mysql+pymysql://root:sang8429@localhost:3306/dg_library"
@@ -13,8 +16,6 @@ DATABASE_URL = "mysql+pymysql://root:sang8429@localhost:3306/dg_library"
 engine = create_engine(DATABASE_URL)
 Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
-
-app = FastAPI()
 
 class BookRequest(BaseModel):
     author: str
@@ -35,7 +36,7 @@ def get_db():
     finally:
         db.close()
 
-@app.get("/api/books")
+@router.get("/api/books")
 def get_books(
     title: str = Query(None),
     author: str = Query(None),
@@ -45,20 +46,20 @@ def get_books(
     current_user: str = Depends(token.get_current_user)
 ):
     try:
-        query = """
+        query = text("""
         SELECT id, author, title, publicate_year, regist_day, status, borrowed, isbn, image 
         FROM books 
         WHERE 1=1
-        """
+        """)
         query_params = {}
         if title:
-            query += " AND title LIKE :title"
+            query += text(" AND title LIKE :title")
             query_params["title"] = f"%{title}%"
         if author:
-            query += " AND author LIKE :author"
+            query += text(" AND author LIKE :author")
             query_params["author"] = f"%{author}%"
-        count_query = f"SELECT COUNT(*) FROM ({query}) as total"
-        query += " LIMIT :limit OFFSET :offset"
+        count_query = text(f"SELECT COUNT(*) FROM ({query}) as total")
+        query += text(" LIMIT :limit OFFSET :offset")
         query_params["limit"] = limit
         query_params["offset"] = offset
         total_count = db.execute(count_query, query_params).scalar()
@@ -87,14 +88,14 @@ def get_books(
             detail="책 리스트를 가져오는 중 오류가 발생했습니다."
         )
     
-@app.get("/api/books/{book_id}")
+@router.get("/api/books/{book_id}")
 def get_book_details(book_id: int, db: Session = Depends(get_db)):
     try:
-        query = """
+        query = text("""
         SELECT id, author, title, publicate_year, regist_day, status, borrowed, isbn, image
         FROM books
         WHERE id = :book_id
-        """
+        """)
         result = db.execute(query, {"book_id": book_id}).fetchone()
         if not result:
             raise HTTPException(status_code=404, detail="책 정보가 없습니다.")
@@ -115,7 +116,7 @@ def get_book_details(book_id: int, db: Session = Depends(get_db)):
             detail="책 정보를 가져오는 중 오류가 발생했습니다."
         )
     
-@app.put("/api/books/{book_id}")
+@router.put("/api/books/{book_id}")
 def loan_book(
     book_id: int,
     loan_date: str,
@@ -125,7 +126,7 @@ def loan_book(
 ):
     try:
         user_id = db.execute(
-            "SELECT id FROM users WHERE username = :username",
+            text("SELECT id FROM users WHERE username = :username"),
             {"username": current_user}
         ).fetchone()
 
@@ -135,9 +136,9 @@ def loan_book(
             detail="유저 정보가 잘못되었습니다."
         )
 
-        query_check_status = """
+        query_check_status = text("""
         SELECT status FROM books WHERE id = :book_id
-        """
+        """)
         book_status = db.execute(query_check_status, {"book_id": book_id}).fetchone()
 
         if not book_status:
@@ -150,10 +151,10 @@ def loan_book(
             return {"message": "이미 대출 중인 책입니다.", "status": "already_borrowed"}
         
         # 대출 기록 삽입
-        query_insert_loan = """
+        query_insert_loan = text("""
         INSERT INTO loan (user_id, book_id, loan_date, will_return_date, status)
         VALUES (:user_id, :book_id, :loan_date, :will_return_date, :status)
-        """
+        """)
         db.execute(query_insert_loan, {
             "user_id": user_id,
             "book_id": book_id,
@@ -162,11 +163,11 @@ def loan_book(
             "status": "progress"
         })
 
-        query = """
+        query = text("""
         UPDATE books
         SET borrowed = borrowed + 1, status = "borrowed"
         WHERE id = :book_id
-        """
+        """)
         db.execute(query, {"book_id": book_id})
         db.commit()
         return {"message": "책 대출 신청을 완료했습니다."}
@@ -177,15 +178,15 @@ def loan_book(
             detail="대출 신청에 실패했습니다."
         )
     
-@app.post("/api/books/add")
+@router.post("/api/books/add")
 def add_book(book: BookRequest, db: Session = Depends(get_db)):
     try:
-        query = """
+        query = text("""
         INSERT INTO books (author, title, publicate_year, regist_day, status, isbn,
         interloaned_from_external, return_due_external, external_book_id, image)
         VALUES(:author, :title, :publicate_year, :regist_day, :status, :isbn, 
         :interloaned_from_external, :return_due_external, :external_book_id, :image)
-        """
+        """)
         db.execute(query, {
             "author": book.author,
             "title": book.title,
@@ -208,14 +209,14 @@ def add_book(book: BookRequest, db: Session = Depends(get_db)):
             detail="책 등록에 실패했습니다."
         )
     
-@app.delete("/api/books/{book_id}")
+@router.delete("/api/books/{book_id}")
 def delete(
     book_id: int,
     db: Session = Depends(get_db)
 ):
     try:
         id = db.execute(
-            "SELECT id FROM books WHERE id = :book_id",
+            text("SELECT id FROM books WHERE id = :book_id"),
             {"book_id": book_id}
         ).fetchone()
 
@@ -225,10 +226,10 @@ def delete(
                 detail="삭제하려는 책이 없습니다."
             )
 
-        query = """
+        query = text("""
         DELETE from books
         WHERE id = :book_id
-        """
+        """)
 
         db.execute(query, {
             "book_id": book_id

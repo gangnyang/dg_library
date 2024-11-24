@@ -1,10 +1,13 @@
-from fastapi import FastAPI, HTTPException, Depends, Query
+from fastapi import FastAPI, HTTPException, APIRouter, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.sql import text
 from back.app.services import token
+
+router = APIRouter()
 
 # MySQL 데이터베이스 연결 정보
 DATABASE_URL = "mysql+pymysql://root:sang8429@localhost:3306/dg_library"
@@ -13,8 +16,6 @@ DATABASE_URL = "mysql+pymysql://root:sang8429@localhost:3306/dg_library"
 engine = create_engine(DATABASE_URL)
 Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
-
-app = FastAPI()
 
 class LibrarianRequest(BaseModel):
     librarian_name: str
@@ -28,14 +29,14 @@ def get_db():
     finally:
         db.close()
 
-@app.get("/api/librarians")
+@router.get("/api/librarians")
 def get_librarians(db: Session = Depends(get_db)):
     try:
         # 사서 정보 조회 쿼리
-        query = """
+        query = text("""
         SELECT id, name AS librarian_name, work_details, hire_date
         FROM librarians
-        """
+        """)
         results = db.execute(query).fetchall()
 
         # 결과를 JSON 형식으로 변환
@@ -57,15 +58,15 @@ def get_librarians(db: Session = Depends(get_db)):
             detail="사서 정보를 가져오는 중 오류가 발생했습니다."
         )
     
-@app.post("/api/librarians")
+@router.post("/api/librarians")
 def create_librarian(librarian: LibrarianRequest, db: Session = Depends(get_db)):
     try:
         # 사서 정보 삽입 쿼리
-        query = """
+        query = text("""
         INSERT INTO librarians (name, work_details, hire_date)
         VALUES (:name, :work_details, :hire_date)
         RETURNING id
-        """
+        """)
         result = db.execute(query, {
             "name": librarian.librarian_name,
             "work_details": librarian.work_details,
@@ -86,15 +87,15 @@ def create_librarian(librarian: LibrarianRequest, db: Session = Depends(get_db))
             detail="사서를 등록하는 중 오류가 발생했습니다."
         )
     
-@app.delete("/api/librarians/{librarian_id}")
+@router.delete("/api/librarians/{librarian_id}")
 def delete_librarian(
     librarian_id: int,
     db: Session = Depends(get_db)
 ):
     try:
-        query_check_librarian = """
+        query_check_librarian = text("""
         SELECT id FROM librarians WHERE id = :librarian_id
-        """
+        """)
         librarian = db.execute(query_check_librarian, {"librarian_id": librarian_id}).fetchone()
 
         if not librarian:
@@ -104,9 +105,9 @@ def delete_librarian(
             )
 
         # 사서 삭제 쿼리
-        query_delete_librarian = """
+        query_delete_librarian = text("""
         DELETE FROM librarians WHERE id = :librarian_id
-        """
+        """)
         db.execute(query_delete_librarian, {"librarian_id": librarian_id})
         db.commit()
 
