@@ -1,0 +1,120 @@
+from fastapi import FastAPI, HTTPException, Depends, Query
+from pydantic import BaseModel
+from sqlalchemy import Column, Integer, String, create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import IntegrityError
+from back.app.services import token
+
+# MySQL 데이터베이스 연결 정보
+DATABASE_URL = "mysql+pymysql://root:sang8429@localhost:3306/dg_library"
+
+# SQLAlchemy 설정
+engine = create_engine(DATABASE_URL)
+Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+app = FastAPI()
+
+class LibrarianRequest(BaseModel):
+    librarian_name: str
+    work_details: str
+    hire_date: str 
+
+def get_db():
+    db = Session()
+    try:
+        yield db
+    finally:
+        db.close()
+
+@app.get("/api/librarians")
+def get_librarians(db: Session = Depends(get_db)):
+    try:
+        # 사서 정보 조회 쿼리
+        query = """
+        SELECT id, name AS librarian_name, work_details, hire_date
+        FROM librarians
+        """
+        results = db.execute(query).fetchall()
+
+        # 결과를 JSON 형식으로 변환
+        librarians = [
+            {
+                "id": row["id"],
+                "librarian_name": row["librarian_name"],
+                "work_details": row["work_details"],
+                "hire_date": row["hire_date"],
+            }
+            for row in results
+        ]
+
+        return librarians
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail="사서 정보를 가져오는 중 오류가 발생했습니다."
+        )
+    
+@app.post("/api/librarians")
+def create_librarian(librarian: LibrarianRequest, db: Session = Depends(get_db)):
+    try:
+        # 사서 정보 삽입 쿼리
+        query = """
+        INSERT INTO librarians (name, work_details, hire_date)
+        VALUES (:name, :work_details, :hire_date)
+        RETURNING id
+        """
+        result = db.execute(query, {
+            "name": librarian.librarian_name,
+            "work_details": librarian.work_details,
+            "hire_date": librarian.hire_date
+        })
+
+        # 반환된 ID 가져오기
+        librarian_id = result.fetchone()["id"]
+
+        db.commit()
+
+        return [{"id": librarian_id, "message": "사서 등록이 완료되었습니다."}]
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail="사서를 등록하는 중 오류가 발생했습니다."
+        )
+    
+@app.delete("/api/librarians/{librarian_id}")
+def delete_librarian(
+    librarian_id: int,
+    db: Session = Depends(get_db)
+):
+    try:
+        query_check_librarian = """
+        SELECT id FROM librarians WHERE id = :librarian_id
+        """
+        librarian = db.execute(query_check_librarian, {"librarian_id": librarian_id}).fetchone()
+
+        if not librarian:
+            raise HTTPException(
+                status_code=404,
+                detail="해당 사서를 찾을 수 없습니다."
+            )
+
+        # 사서 삭제 쿼리
+        query_delete_librarian = """
+        DELETE FROM librarians WHERE id = :librarian_id
+        """
+        db.execute(query_delete_librarian, {"librarian_id": librarian_id})
+        db.commit()
+
+        return {"id": librarian_id, "message": "사서가 성공적으로 삭제되었습니다."}
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail="사서를 삭제하는 중 오류가 발생했습니다."
+        )
