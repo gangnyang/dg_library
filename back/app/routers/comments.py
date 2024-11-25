@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import text
 from back.app.services import token
 from datetime import datetime
+from pytz import timezone
 
 router = APIRouter()
 
@@ -33,27 +34,27 @@ def get_comments(
 ):
     try:
         # 최상위 댓글 가져오기 (parent_id가 NULL인 댓글)
-        query = text("""
+        query = """
         SELECT id, book_id, user_id, parent_id, context, created, updated
         FROM comments
         WHERE book_id = :book_id AND parent_id IS NULL
         ORDER BY created DESC
         LIMIT :limit
-        """)
-        top_comments = db.execute(query, {"book_id": book_id, "limit": limit}).fetchall()
+        """
+        top_comments = db.execute(text(query), {"book_id": book_id, "limit": limit}).mappings().fetchall()
 
         # 최상위 댓글의 ID 목록 가져오기
         parent_ids = [comment["id"] for comment in top_comments]
 
         # 대댓글 가져오기 (parent_id가 상위 댓글 ID 중 하나인 경우)
         if parent_ids:
-            query_replies = text("""
+            query_replies = """
             SELECT id, book_id, user_id, parent_id, context, created, updated
             FROM comments
             WHERE parent_id IN :parent_ids
             ORDER BY created ASC
-            """)
-            replies = db.execute(query_replies, {"parent_ids": tuple(parent_ids)}).fetchall()
+            """
+            replies = db.execute(text(query_replies), {"parent_ids": tuple(parent_ids)}).mappings().fetchall()
         else:
             replies = []
 
@@ -88,20 +89,20 @@ def get_comments(
     except Exception as e:
         raise HTTPException(
             status_code=400,
-            detail="댓글을 가져오는 중 오류가 발생했습니다."
+            detail=f"댓글을 가져오는 중 오류가 발생했습니다. {str(e)}"
         )
 
 @router.post("/api/comments/add")
 def create_comment(
     book_id: int,
-    parent_id: int | None,
     context: str,
+    parent_id: int | None = None,
     db: Session = Depends(get_db),
     current_user: str = Depends(token.get_current_user),  # JWT 인증된 유저
 ):
     try:
         # 현재 시간 가져오기
-        current_time = datetime.utcnow()
+        current_time = datetime.now(timezone('Asia/Seoul'))
         user_id = db.execute(
             text("SELECT id FROM users WHERE username = :username"),
             {"username": current_user}
@@ -111,12 +112,13 @@ def create_comment(
                 status_code=404,
                 detail="댓글을 작성하려면 로그인해야 합니다."
             )
+        user_id = user_id[0]
         # 댓글 삽입
-        query_insert_comment = text("""
+        query_insert_comment = """
         INSERT INTO comments (book_id, user_id, parent_id, context, created, updated)
         VALUES (:book_id, :user_id, :parent_id, :context, :created, :updated)
-        """)
-        db.execute(query_insert_comment, {
+        """
+        db.execute(text(query_insert_comment), {
             "book_id": book_id,
             "user_id": user_id,
             "parent_id": parent_id,
@@ -137,7 +139,7 @@ def create_comment(
         db.rollback()
         raise HTTPException(
             status_code=400,
-            detail="댓글 작성 중 오류가 발생했습니다."
+            detail=f"댓글 작성 중 오류가 발생했습니다.{str(e)}"
         )
 
 @router.put("/api/comments/{comment_id}")
@@ -145,21 +147,23 @@ def update_comment(
     comment_id: int,
     context: str,
     db: Session = Depends(get_db),
-    current_user: str = Depends(token.get_current_user),  # JWT 인증된 유저
+    current_user: str = Depends(token.get_current_user), 
 ):
     try:
         # 댓글 존재 여부 및 작성자 확인
-        query_check_comment = text("""
+        query_check_comment = """
         SELECT id, user_id, created
         FROM comments
         WHERE id = :comment_id
-        """)
-        comment = db.execute(query_check_comment, {"comment_id": comment_id}).fetchone()
+        """
+        comment = db.execute(text(query_check_comment), {"comment_id": comment_id}).mappings().fetchone()
 
         user_id = db.execute(
             text("SELECT id FROM users WHERE username = :username"),
             {"username": current_user}
         ).fetchone()
+
+        user_id = user_id[0]
 
         if not comment:
             raise HTTPException(
@@ -175,12 +179,12 @@ def update_comment(
 
         # 댓글 내용 업데이트
         current_time = datetime.utcnow()
-        query_update_comment = text("""
+        query_update_comment = """
         UPDATE comments
         SET context = :context, updated = :updated
         WHERE id = :comment_id
-        """)
-        db.execute(query_update_comment, {
+        """
+        db.execute(text(query_update_comment), {
             "context": context,
             "updated": current_time,
             "comment_id": comment_id
@@ -198,7 +202,7 @@ def update_comment(
         db.rollback()
         raise HTTPException(
             status_code=400,
-            detail="댓글 수정 중 오류가 발생했습니다."
+            detail=f"댓글 수정 중 오류가 발생했습니다. {str(e)}"
         )
     
 @router.delete("/api/comments/{comment_id}")
@@ -213,12 +217,14 @@ def delete_comment(
             {"username": current_user}
         ).fetchone()
 
-        query_check_comment = text("""
+        user_id = user_id[0]
+
+        query_check_comment = """
         SELECT id, user_id, created
         FROM comments
         WHERE id = :comment_id
-        """)
-        comment = db.execute(query_check_comment, {"comment_id": comment_id}).fetchone()
+        """
+        comment = db.execute(text(query_check_comment), {"comment_id": comment_id}).mappings().fetchone()
 
         if not comment:
             raise HTTPException(
@@ -231,12 +237,12 @@ def delete_comment(
                 detail="댓글을 삭제할 권한이 없습니다."
             )
         
-        query_delete_comment = text("""
+        query_delete_comment = """
         DELETE from comments
         WHERE id = :comment_id
-        """)
+        """
 
-        db.execute(query_delete_comment, {
+        db.execute(text(query_delete_comment), {
             "comment_id": comment_id
         })
         db.commit()
@@ -245,6 +251,6 @@ def delete_comment(
         db.rollback()
         raise HTTPException(
             status_code=400,
-            detail="댓글 삭제 중 오류가 발생했습니다."
+            detail=f"댓글 삭제 중 오류가 발생했습니다. {str(e)}"
         )
     

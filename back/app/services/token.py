@@ -2,9 +2,11 @@ from fastapi import FastAPI, HTTPException, Depends
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from fastapi.security import OAuth2PasswordBearer
+from dotenv import load_dotenv
+import os
 
 # JWT 설정
-SECRET_KEY = "dfl1sdflkjvc13s8gckjsdkj1234kvvsdd" 
+SECRET_KEY = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 # 60분동안 토큰이 유효함
 
@@ -16,7 +18,7 @@ def create_access_token(data: dict):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/user/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/users/login")
 
 def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
@@ -27,3 +29,4 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         return username
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
+    

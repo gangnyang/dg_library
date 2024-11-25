@@ -24,6 +24,15 @@ class UserRequest(BaseModel):
     phone: str | None = None
     name: str
 
+class UserUpdateRequest(BaseModel):
+    password: str
+    phone: str | None = None
+    name: str
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
 class UserResponse(BaseModel):
     user_id: int
     message: str
@@ -40,12 +49,12 @@ def get_db():
 def register_user(user: UserRequest, db: Session = Depends(get_db)):
     try:
         # 데이터 삽입 쿼리 실행
-        query = text("""
+        query = """
         INSERT INTO users (username, password, phone, name)
         VALUES (:username, :password, :phone, :name)
-        """)
+        """
         hashed = hash.hash_password(user.password)
-        db.execute(query, {
+        db.execute(text(query), {
             "username": user.username,
             "password": hashed,
             "phone": user.phone,
@@ -55,24 +64,24 @@ def register_user(user: UserRequest, db: Session = Depends(get_db)):
 
         # 삽입된 사용자 ID 가져오기
         result = db.execute(text("SELECT LAST_INSERT_ID() as id"))
-        user_id = result.fetchone()["id"]
+        user_id = result.mappings().fetchone()["id"]
 
     except IntegrityError:
         db.rollback()
         raise HTTPException(
             status_code=400,
-            detail="회원가입에 실패했습니다. (사유: 중복된 username)"
+            detail="회원가입에 실패했습니다."
         )
 
     return {"user_id": user_id, "message": "회원가입에 성공했습니다."}
 
 @router.post("/api/users/login")
-def login(user: UserRequest, db: Session = Depends(get_db)):
+def login(user: LoginRequest, db: Session = Depends(get_db)):
     # 사용자 검색
     db_user = db.execute(
         text("SELECT * FROM users WHERE username = :username"),
         {"username": user.username}
-    ).fetchone()
+    ).mappings().fetchone()
 
     # 1. 아이디가 존재하지 않는 경우
     if not db_user:
@@ -97,7 +106,7 @@ def login(user: UserRequest, db: Session = Depends(get_db)):
 
 @router.put("/api/users/update")
 def update(
-    updated_user: UserRequest,
+    updated_user: UserUpdateRequest,
     db: Session = Depends(get_db),
     current_user: str = Depends(token.get_current_user)
 ):
@@ -108,11 +117,11 @@ def update(
         )
 
     try:
-        query = text("""
+        query = """
         UPDATE users
         SET password = :password, phone = :phone, name = :name WHERE username = :username
-        """)
-        db.execute(query, {
+        """
+        db.execute(text(query), {
             "password": hash.hash_password(updated_user.password),
             "phone": updated_user.phone,
             "name": updated_user.name,
@@ -144,12 +153,12 @@ def withdraw(
                 detail="탈퇴하려는 계정이 존재하지 않습니다."
             )
 
-        query = text("""
+        query = """
         DELETE from users
         WHERE username = :username
-        """)
+        """
 
-        db.execute(query, {
+        db.execute(text(query), {
             "username": current_user
         })
         db.commit()

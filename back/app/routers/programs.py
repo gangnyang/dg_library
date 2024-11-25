@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import text
 from back.app.services import token
 from datetime import datetime, timedelta
+from pytz import timezone
 
 router = APIRouter()
 
@@ -34,13 +35,13 @@ def get_db():
 def get_programs(limit: int = 20, db: Session = Depends(get_db)):
     try:
         # 도서관 프로그램 조회 쿼리
-        query = text("""
+        query = """
         SELECT id, name, description, event_date, participants
         FROM programs
         ORDER BY event_date ASC
         LIMIT :limit
-        """)
-        results = db.execute(query, {"limit": limit}).fetchall()
+        """
+        results = db.execute(text(query), {"limit": limit}).mappings().fetchall()
 
         # 결과를 JSON 형식으로 변환
         programs = [
@@ -59,26 +60,25 @@ def get_programs(limit: int = 20, db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail="프로그램 정보를 가져오는 중 오류가 발생했습니다."
+            detail=f"프로그램 정보를 가져오는 중 오류가 발생했습니다. {str(e)}"
         )
     
 @router.post("/api/library-programs")
 def create_program(program: ProgramRequest, db: Session = Depends(get_db)):
     try:
         # 도서관 프로그램 삽입 쿼리
-        query = text("""
+        query = """
         INSERT INTO programs (name, description, event_date)
         VALUES (:name, :description, :event_date)
-        RETURNING id
-        """)
-        result = db.execute(query, {
+        """
+        result = db.execute(text(query), {
             "name": program.name,
             "description": program.description,
             "event_date": program.event_date
         })
 
         # 생성된 프로그램 ID 가져오기
-        program_id = result.fetchone()["id"]
+        program_id = db.execute(text("SELECT LAST_INSERT_ID()")).scalar()
 
         db.commit()
 
@@ -88,7 +88,7 @@ def create_program(program: ProgramRequest, db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(
             status_code=400,
-            detail="프로그램 생성 중 오류가 발생했습니다."
+            detail=f"프로그램 생성 중 오류가 발생했습니다. {str(e)}"
         )
     
 @router.delete("/api/programs/{program_id}")
@@ -97,21 +97,24 @@ def delete_program(
     db: Session = Depends(get_db)
 ):
     try:
-        query_check_program = text("""
+        query_check_program = """
         SELECT id FROM programs WHERE id = :program_id
-        """)
-        librarian = db.execute(query_check_program, {"program_id": program_id}).fetchone()
+        """
+        librarian = db.execute(text(query_check_program), {"program_id": program_id}).fetchone()
 
         if not librarian:
             raise HTTPException(
                 status_code=404,
                 detail="해당 프로그램을 찾을 수 없습니다."
             )
+        
+        db.execute(text("DELETE FROM program_participants WHERE program_id = :program_id"), {"program_id": program_id})
+        db.execute(text("DELETE FROM program_librarians WHERE program_id = :program_id"), {"program_id": program_id})
 
-        query_delete_program = text("""
+        query_delete_program = """
         DELETE FROM programs WHERE id = :program_id
-        """)
-        db.execute(query_delete_program, {"program_id": program_id})
+        """
+        db.execute(text(query_delete_program), {"program_id": program_id})
         db.commit()
 
         return {"id": program_id, "message": "프로그램이 성공적으로 삭제되었습니다."}
@@ -120,20 +123,20 @@ def delete_program(
         db.rollback()
         raise HTTPException(
             status_code=400,
-            detail="프로그램을 삭제하는 중 오류가 발생했습니다."
+            detail=f"프로그램을 삭제하는 중 오류가 발생했습니다. {str(e)}"
         )
 
 @router.get("/api/programs/{program_id}/participants")
 def get_program_participants(program_id: int, db: Session = Depends(get_db)):
     try:
         # 프로그램 참가자 조회 쿼리
-        query = text("""
+        query = """
         SELECT id, program_id, user_id, joined
         FROM program_participants
         WHERE program_id = :program_id
         ORDER BY joined ASC
-        """)
-        results = db.execute(query, {"program_id": program_id}).fetchall()
+        """
+        results = db.execute(text(query), {"program_id": program_id}).mappings().fetchall()
 
         # 결과를 JSON 형식으로 변환
         participants = [
@@ -151,7 +154,7 @@ def get_program_participants(program_id: int, db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail="프로그램 참가자 정보를 가져오는 중 오류가 발생했습니다."
+            detail=f"프로그램 참가자 정보를 가져오는 중 오류가 발생했습니다. {str(e)}"
         )
 
 @router.post("/api/programs/{program_id}/participants")
@@ -172,11 +175,13 @@ def register_participant(
             detail="유저 정보가 잘못되었습니다."
         )
 
+        user_id = user_id[0]
+
         # 프로그램 존재 여부 확인
-        query_check_program = text("""
+        query_check_program = """
         SELECT id FROM programs WHERE id = :program_id
-        """)
-        program = db.execute(query_check_program, {"program_id": program_id}).fetchone()
+        """
+        program = db.execute(text(query_check_program), {"program_id": program_id}).mappings().fetchone()
 
         if not program:
             raise HTTPException(
@@ -185,14 +190,14 @@ def register_participant(
             )
 
         # 참가자 중복 등록 확인
-        query_check_participant = text("""
+        query_check_participant = """
         SELECT id FROM program_participants
         WHERE program_id = :program_id AND user_id = :user_id
-        """)
-        existing_participant = db.execute(query_check_participant, {
+        """
+        existing_participant = db.execute(text(query_check_participant), {
             "program_id": program_id,
             "user_id": user_id
-        }).fetchone()
+        }).mappings().fetchone()
 
         if existing_participant:
             raise HTTPException(
@@ -201,15 +206,17 @@ def register_participant(
             )
 
         # 참가자 등록
-        query_insert_participant = text("""
+        query_insert_participant = """
         INSERT INTO program_participants (program_id, user_id, joined)
         VALUES (:program_id, :user_id, :joined)
-        """)
-        db.execute(query_insert_participant, {
+        """
+        db.execute(text(query_insert_participant), {
             "program_id": program_id,
             "user_id": user_id,
-            "joined": datetime.utcnow()
+            "joined": datetime.now(timezone('Asia/Seoul'))
         })
+
+        db.execute(text("UPDATE programs set participants = participants+1 WHERE id = :program_id"), {"program_id": program_id})
 
         db.commit()
 
@@ -219,19 +226,19 @@ def register_participant(
         db.rollback()
         raise HTTPException(
             status_code=400,
-            detail="참가자 등록 중 오류가 발생했습니다."
+            detail=f"참가자 등록 중 오류가 발생했습니다. {str(e)}"
         )
 
 @router.get("/api/programs/{program_id}/librarians")
 def get_program_librarians(program_id: int, db: Session = Depends(get_db)):
     try:
         # 프로그램 담당자 조회 쿼리
-        query = text("""
+        query = """
         SELECT id, program_id, librarian_id
         FROM program_librarians 
         WHERE program_id = :program_id
-        """)
-        results = db.execute(query, {"program_id": program_id}).fetchall()
+        """
+        results = db.execute(text(query), {"program_id": program_id}).mappings().fetchall()
 
         # 결과를 JSON 형식으로 변환
         participants = [
@@ -248,7 +255,7 @@ def get_program_librarians(program_id: int, db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail="프로그램 담당자 정보를 가져오는 중 오류가 발생했습니다."
+            detail=f"프로그램 담당자 정보를 가져오는 중 오류가 발생했습니다. {str(e)}"
         )
     
 @router.post("/api/programs/{program_id}/librarians")
@@ -258,20 +265,20 @@ def register_librarian(
     db: Session = Depends(get_db)
 ):
     try:
-        query_check_librarian = text("""
+        query_check_librarian = """
         SELECT id FROM librarians WHERE id = :librarian_id
-        """)
-        librarian = db.execute(query_check_librarian, {"librarian_id": librarian_id}).fetchone()
+        """
+        librarian = db.execute(text(query_check_librarian), {"librarian_id": librarian_id}).mappings().fetchone()
         if not librarian:
             raise HTTPException(
                 status_code=404,
                 detail="해당 담당자를 찾을 수 없습니다."
             )
         # 프로그램 존재 여부 확인
-        query_check_program = text("""
+        query_check_program = """
         SELECT id FROM programs WHERE id = :program_id
-        """)
-        program = db.execute(query_check_program, {"program_id": program_id}).fetchone()
+        """
+        program = db.execute(text(query_check_program), {"program_id": program_id}).mappings().fetchone()
 
         if not program:
             raise HTTPException(
@@ -280,14 +287,14 @@ def register_librarian(
             )
 
         # 담당자 중복 등록 확인
-        query_check_participant = text("""
+        query_check_participant = """
         SELECT id FROM program_librarians
         WHERE program_id = :program_id AND librarian_id = :librarian_id
-        """)
-        existing_librarian = db.execute(query_check_participant, {
+        """
+        existing_librarian = db.execute(text(query_check_participant), {
             "program_id": program_id,
             "librarian_id": librarian_id
-        }).fetchone()
+        }).mappings().fetchone()
 
         if existing_librarian:
             raise HTTPException(
@@ -296,11 +303,11 @@ def register_librarian(
             )
 
         # 담당자 등록
-        query_insert_librarian = text("""
+        query_insert_librarian = """
         INSERT INTO program_librarians (program_id, librarian_id)
         VALUES (:program_id, :librarian_id)
-        """)
-        db.execute(query_insert_librarian, {
+        """
+        db.execute(text(query_insert_librarian), {
             "program_id": program_id,
             "librarian_id": librarian_id
         })
@@ -313,5 +320,5 @@ def register_librarian(
         db.rollback()
         raise HTTPException(
             status_code=400,
-            detail="담당자 등록 중 오류가 발생했습니다."
+            detail=f"담당자 등록 중 오류가 발생했습니다. {str(e)}"
         )

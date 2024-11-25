@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import text
 from back.app.services import token
 from datetime import datetime
+from pytz import timezone
 
 router = APIRouter()
 
@@ -33,7 +34,7 @@ def get_db():
     finally:
         db.close()
 
-@router.post("/api/loan")
+@router.get("/api/loan/user-loan")
 def get_loan_history(
     limit: int = 20,  # 최대 반환 개수
     db: Session = Depends(get_db),
@@ -41,10 +42,10 @@ def get_loan_history(
 ):
     try:
         # 현재 유저의 user_id 가져오기
-        query_user = text("""
+        query_user = """
         SELECT id FROM users WHERE username = :username
-        """)
-        result = db.execute(query_user, {"username": current_user}).fetchone()
+        """
+        result = db.execute(text(query_user), {"username": current_user}).mappings().fetchone()
 
         if not result:
             raise HTTPException(
@@ -55,14 +56,14 @@ def get_loan_history(
         user_id = result["id"]
 
         # 대출 내역 조회 쿼리
-        query = text("""
+        query = """
         SELECT id, user_id, book_id, loan_date, will_return_date, returned_date, overdue, status
         FROM loan
         WHERE user_id = :user_id
         ORDER BY loan_date DESC
         LIMIT :limit
-        """)
-        loan_results = db.execute(query, {"user_id": user_id, "limit": limit}).fetchall()
+        """
+        loan_results = db.execute(text(query), {"user_id": user_id, "limit": limit}).mappings().fetchall()
 
         # 결과를 JSON 형식으로 반환
         loan_history = [
@@ -83,10 +84,10 @@ def get_loan_history(
     except Exception as e:
         raise HTTPException(
             status_code=400,
-            detail="대출 내역을 가져오는 중 오류가 발생했습니다."
+            detail=f"대출 내역을 가져오는 중 오류가 발생했습니다. {str(e)}"
         )
     
-@router.post("/api/loan")
+@router.get("/api/loan")
 def get_book_loan_history(
     book_id: int,
     limit: int = 20,
@@ -94,14 +95,14 @@ def get_book_loan_history(
 ):
     try:
         # 책의 대출 내역 조회 쿼리
-        query = text("""
+        query = """
         SELECT id, user_id, book_id, loan_date, will_return_date, returned_date, overdue, status
         FROM loan
         WHERE book_id = :book_id
         ORDER BY loan_date DESC
         LIMIT :limit
-        """)
-        loan_results = db.execute(query, {"book_id": book_id, "limit": limit}).fetchall()
+        """
+        loan_results = db.execute(text(query), {"book_id": book_id, "limit": limit}).mappings().fetchall()
 
         # 결과를 JSON 형식으로 변환
         loan_history = [
@@ -122,10 +123,10 @@ def get_book_loan_history(
     except Exception as e:
         raise HTTPException(
             status_code=400,
-            detail="책 대출 내역을 가져오는 중 오류가 발생했습니다."
+            detail=f"책 대출 내역을 가져오는 중 오류가 발생했습니다. {str(e)}"
         )
 
-@router.put("/api/loan/{loan_id}")
+@router.put("/api/loan/return/{loan_id}")
 def return_loan(
     loan_id: int,  # 대출 ID (URL 경로 매개변수)
     returned_date: str,
@@ -136,10 +137,10 @@ def return_loan(
 ):
     try:
         # 대출 기록 존재 여부 확인
-        query_check_loan = text("""
+        query_check_loan = """
         SELECT id, status FROM loan WHERE id = :loan_id
-        """)
-        loan_record = db.execute(query_check_loan, {"loan_id": loan_id}).fetchone()
+        """
+        loan_record = db.execute(text(query_check_loan), {"loan_id": loan_id}).mappings().fetchone()
 
         if not loan_record:
             raise HTTPException(
@@ -151,12 +152,12 @@ def return_loan(
             return {"message": "이미 반납된 대출입니다."}
 
         # 대출 기록 업데이트
-        query_update_loan = text("""
+        query_update_loan = """
         UPDATE loan
         SET returned_date = :returned_date, status = :status, overdue = :overdue
         WHERE id = :loan_id
-        """)
-        db.execute(query_update_loan, {
+        """
+        db.execute(text(query_update_loan), {
             "returned_date": returned_date,
             "status": status,
             "overdue": overdue,
@@ -164,12 +165,12 @@ def return_loan(
         })
 
         # 대출된 책 상태 업데이트 (책을 다시 대출 가능 상태로 변경)
-        query_update_book = text("""
+        query_update_book = """
         UPDATE books
         SET status = 'available'
         WHERE id = (SELECT book_id FROM loan WHERE id = :loan_id)
-        """)
-        db.execute(query_update_book, {"loan_id": loan_id})
+        """
+        db.execute(text(query_update_book), {"loan_id": loan_id})
 
         db.commit()
 
@@ -178,23 +179,23 @@ def return_loan(
         db.rollback()
         raise HTTPException(
             status_code=400,
-            detail="반납 처리 중 오류가 발생했습니다."
+            detail=f"반납 처리 중 오류가 발생했습니다. {str(e)}"
         )
     
 
-@router.put("/api/loan/overdue")
+@router.put("/api/loan/update-overdue")
 def update_overdue_status(db: Session = Depends(get_db)):
     try:
         # 현재 날짜 가져오기
-        current_date = datetime.utcnow().date()
+        current_date = datetime.now(timezone('Asia/Seoul')).date().isoformat()
 
         # 연체 상태 업데이트 쿼리
-        query_update_overdue = text("""
+        query_update_overdue = """
         UPDATE loan
         SET overdue = 1, status = 'overdue'
         WHERE will_return_date < :current_date AND returned_date IS NULL AND overdue = 0
-        """)
-        result = db.execute(query_update_overdue, {"current_date": current_date})
+        """
+        result = db.execute(text(query_update_overdue), {"current_date": current_date})
 
         # 변경된 행 수 확인
         updated_rows = result.rowcount
@@ -205,5 +206,5 @@ def update_overdue_status(db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(
             status_code=400,
-            detail="연체 상태 업데이트 중 오류가 발생했습니다."
+            detail=f"연체 상태 업데이트 중 오류가 발생했습니다. {str(e)}"
         )

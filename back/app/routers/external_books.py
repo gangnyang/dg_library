@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import text
 from back.app.services import token
 from datetime import datetime, timedelta
+from pytz import timezone
 
 router = APIRouter()
 
@@ -44,24 +45,24 @@ def get_external_books(
     current_user: str = Depends(token.get_current_user)
 ):
     try:
-        query = text("""
+        query = """
         SELECT id, author, title, publicate_year, regist_day, status, isbn, image 
         FROM external_books 
         WHERE 1=1
-        """)
+        """
         query_params = {}
         if title:
-            query += text(" AND title LIKE :title")
+            query += " AND title LIKE :title"
             query_params["title"] = f"%{title}%"
         if author:
-            query += text(" AND author LIKE :author")
+            query += " AND author LIKE :author"
             query_params["author"] = f"%{author}%"
-        count_query = text(f"SELECT COUNT(*) FROM ({query}) as total")
-        query += text(" LIMIT :limit OFFSET :offset")
+        count_query = f"SELECT COUNT(*) FROM ({query}) as total"
+        query += " LIMIT :limit OFFSET :offset"
         query_params["limit"] = limit
         query_params["offset"] = offset
-        total_count = db.execute(count_query, query_params).scalar()
-        result = db.execute(query, query_params).fetchall()
+        total_count = db.execute(text(count_query), query_params).scalar()
+        result = db.execute(text(query), query_params).mappings().fetchall()
         books = [
             {
                 "id": row["id"],
@@ -82,17 +83,17 @@ def get_external_books(
     except Exception as e:
         raise HTTPException(
             status_code=400,
-            detail="책 리스트를 가져오는 중 오류가 발생했습니다."
+            detail=f"책 리스트를 가져오는 중 오류가 발생했습니다. {str(e)}"
         )
     
-@router.put("/api/external_books/{external_book_id}")
+@router.put("/api/external_books/interloan/{external_book_id}")
 def interloan_book(
     external_book_id: int,
     db: Session = Depends(get_db),
     current_user: str = Depends(token.get_current_user)
 ):
     try:
-        current_time = datetime.now()
+        current_time = datetime.now(timezone('Asia/Seoul'))
         user_id = db.execute(
             text("SELECT id FROM users WHERE username = :username"),
             {"username": current_user}
@@ -104,10 +105,12 @@ def interloan_book(
             detail="유저 정보가 잘못되었습니다."
         )
 
-        query_check_status = text("""
+        user_id = user_id[0]
+
+        query_check_status = """
         SELECT status FROM external_books WHERE id = :book_id
-        """)
-        book_status = db.execute(query_check_status, {"book_id": external_book_id}).fetchone()
+        """
+        book_status = db.execute(text(query_check_status), {"book_id": external_book_id}).mappings().fetchone()
 
         if not book_status:
             raise HTTPException(
@@ -119,34 +122,34 @@ def interloan_book(
             return {"message": "이미 대출 중인 책입니다.", "status": "already_borrowed"}
         
         # 상호대차 기록 삽입
-        query_insert_loan = text("""
+        query_insert_loan = """
         INSERT INTO interloan (user_id, external_book_id, request_date, status)
         VALUES (:user_id, :book_id, :request_date, :status)
-        """)
-        db.execute(query_insert_loan, {
+        """
+        db.execute(text(query_insert_loan), {
             "user_id": user_id,
             "book_id": external_book_id,
             "request_date": current_time,
             "status": "progress"
         })
 
-        query = text("""
+        query = """
         UPDATE external_books
         SET status = "borrowed"
         WHERE id = :book_id
-        """)
-        db.execute(query, {"book_id": external_book_id})
+        """
+        db.execute(text(query), {"book_id": external_book_id})
 
         return_date = current_time + timedelta(days=28)
 
         # 도서 테이블에 도서 삽입
-        query_insert_book = text("""
+        query_insert_book = """
         INSERT INTO books (author, title, publicate_year, regist_day, status, isbn, 
         interloaned_from_external, return_due_external, external_book_id, image)
         SELECT e.author, e.title, e.publicate_year, e.regist_day, e.status, e.isbn, 
         1, :return_date, e.id, e.image FROM external_books e
-        """)
-        db.execute(query_insert_book, {
+        """
+        db.execute(text(query_insert_book), {
             "return_date": return_date
         })
 
@@ -156,17 +159,17 @@ def interloan_book(
         db.rollback()
         raise HTTPException(
             status_code=400,
-            detail="상호대차 신청에 실패했습니다."
+            detail=f"상호대차 신청에 실패했습니다. {str(e)}"
         )
     
-@router.put("/api/external_books/{interloan_id}")
+@router.put("/api/external_books/return/{interloan_id}")
 def return_loan(
     interloan_id: int,  # 상호대차 ID
     db: Session = Depends(get_db),
     current_user: str = Depends(token.get_current_user)
 ):
     try:
-        current_time = datetime.utcnow()
+        current_time = datetime.now(timezone('Asia/Seoul'))
         user_id = db.execute(
             text("SELECT id FROM users WHERE username = :username"),
             {"username": current_user}
@@ -178,11 +181,13 @@ def return_loan(
             detail="유저 정보가 잘못되었습니다."
         )
 
+        user_id = user_id[0]
+
         # 상호대차 기록 존재 여부 확인
-        query_check_loan = text("""
+        query_check_loan = """
         SELECT id, status FROM interloan WHERE id = :loan_id
-        """)
-        interloan_record = db.execute(query_check_loan, {"loan_id": interloan_id}).fetchone()
+        """
+        interloan_record = db.execute(text(query_check_loan), {"loan_id": interloan_id}).mappings().fetchone()
 
         if not interloan_record:
             raise HTTPException(
@@ -194,30 +199,30 @@ def return_loan(
             return {"message": "이미 완료된 상호대차입니다."}
 
         # 상호대차 기록 업데이트
-        query_update_loan = text("""
+        query_update_loan = """
         UPDATE interloan
         SET status = :status
         WHERE id = :interloan_id
-        """)
-        db.execute(query_update_loan, {
+        """
+        db.execute(text(query_update_loan), {
             "status": "complete",
             "interloan_id": interloan_id
         })
 
         # 상호대차된 책 상태 업데이트 (책을 다시 대출 가능 상태로 변경)
-        query_update_book = text("""
+        query_update_book = """
         UPDATE external_books
         SET status = 'available'
-        WHERE id = (SELECT book_id FROM interloan WHERE id = :interloan_id)
-        """)
-        db.execute(query_update_book, {"interloan_id": interloan_id})
+        WHERE id = (SELECT external_book_id FROM interloan WHERE id = :interloan_id)
+        """
+        db.execute(text(query_update_book), {"interloan_id": interloan_id})
 
         # 상호대차된 책 도서 테이블에서 삭제
-        query_delete_book = text("""
+        query_delete_book = """
         DELETE from books
-        WHERE id = (SELECT book_id FROM interloan WHERE id = :interloan_id)
-        """)
-        db.execute(query_delete_book, {"interloan_id": interloan_id})
+        WHERE external_book_id = (SELECT external_book_id FROM interloan WHERE id = :interloan_id)
+        """
+        db.execute(text(query_delete_book), {"interloan_id": interloan_id})
 
         db.commit()
 
@@ -226,5 +231,5 @@ def return_loan(
         db.rollback()
         raise HTTPException(
             status_code=400,
-            detail="반납 처리 중 오류가 발생했습니다."
+            detail=f"반납 처리 중 오류가 발생했습니다. {str(e)}"
         )
