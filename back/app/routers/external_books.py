@@ -147,10 +147,11 @@ def interloan_book(
         INSERT INTO books (author, title, publicate_year, regist_day, status, isbn, 
         interloaned_from_external, return_due_external, external_book_id, image)
         SELECT e.author, e.title, e.publicate_year, e.regist_day, e.status, e.isbn, 
-        1, :return_date, e.id, e.image FROM external_books e
+        1, :return_date, e.id, e.image FROM external_books e WHERE e.id = :external_book_id
         """
         db.execute(text(query_insert_book), {
-            "return_date": return_date
+            "return_date": return_date,
+            "external_book_id": external_book_id
         })
 
         db.commit()

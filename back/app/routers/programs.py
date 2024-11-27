@@ -107,9 +107,6 @@ def delete_program(
                 status_code=404,
                 detail="해당 프로그램을 찾을 수 없습니다."
             )
-        
-        db.execute(text("DELETE FROM program_participants WHERE program_id = :program_id"), {"program_id": program_id})
-        db.execute(text("DELETE FROM program_librarians WHERE program_id = :program_id"), {"program_id": program_id})
 
         query_delete_program = """
         DELETE FROM programs WHERE id = :program_id
@@ -245,7 +242,7 @@ def get_program_librarians(program_id: int, db: Session = Depends(get_db)):
             {
                 "id": row["id"],
                 "program_id": row["program_id"],
-                "user_id": row["user_id"]
+                "librarian_id": row["librarian_id"]
             }
             for row in results
         ]
