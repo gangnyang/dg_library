@@ -1,11 +1,22 @@
 import react from "react";
-import '/Search.css';
+import './css/Search.css';
 
-function Search(){
+function Search({query, ph}){
     return(
         <div className="Search">
-            <input type="text" placeholder="작가 이름 또는 제목 입력"></input>
-            <button>검색</button>
+            <div className="Frame1">
+                <div className="Search_Caption">
+                    <p className="Search_Title">{query}</p>
+                </div>
+                <div className="Inp_background">
+            <input className="InputBox" type="text" placeholder={ph}/>
+            </div>
+            <button className="SearchButton">
+                <div className="Search_logo"/>
+            </button>
+            </div>
         </div>
     )
 }
+
+export default Search;

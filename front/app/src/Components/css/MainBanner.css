@@ -1,0 +1,95 @@
+.MainBanner{
+    position: relative;
+    width: 100%;
+    height: 70vh;
+}
+
+.BannerBox{
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.BannerTextBox{
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0%;
+    gap: 4vw;
+    
+    position: relative;
+    width: 40vw;
+    height: 30vh;
+    left: 10vw;
+    top: 10vh;
+    
+}
+
+.BannerText{
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0%;
+    gap: 2vw;
+    
+    width: 100%;
+    height: 100%;
+    
+    
+    /* Inside auto layout */
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+}
+
+.Title{
+    /* Hero */
+    font-family: 'DM Sans';
+    font-style: normal;
+    font-weight: 700;
+    font-size: 96px;
+    line-height: 96px;
+    /* or 100% */
+    letter-spacing: -0.02em;
+    
+    color: #141416;
+    
+    
+    /* Inside auto layout */
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+}
+
+.Description{
+    /* Body 2 */
+    font-family: 'Poppins';
+    font-style: normal;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 24px;
+    /* or 150% */
+    
+    color: #000000;
+    
+    
+    /* Inside auto layout */
+    flex: none;
+    order: 1;
+    flex-grow: 0;
+    
+}
+
+.BannerImage{
+    position: relative;
+    width: 40%;
+    height: 100%;
+    left: 60%;
+    top: -43%;
+    
+}
+
+.image{
+    width: 100%;
+    height: 100%;
+}

@@ -1,18 +1,25 @@
 import React from "react"
-import './Header.css';
+import {useNavigate} from "react-router-dom";
+import './css/Header.css';
 
-function Header(){
-    return(
+function Header() {
+    return (
         <header className="header">
-            <nav>
-                <ul classname = "nav_menu">
-                    <li><a href="#">메인</a></li>
-                    <li><a href="#">다른 도서관 책</a></li>
-                    <li><a href="#">프로그램</a></li>
-                    <li><a href="#">오시는 길</a></li>
-                    <li className= "Mypage_icon">👤</li>
-                </ul>
-            </nav>
+            <div className="nav">
+                <div className="left_content">
+                    <div className="divider"/>
+                    <a href="/">메인</a>
+                    <a href="/externallib">다른 도서관 책</a>
+                    <a href="/programs">프로그램</a>
+                    <a href="#">오시는 길</a>
+                </div>
+                <div className="Mypage_frame">
+                    <button className="Mypage_button">
+                        <div className="logo"/>
+                    </button>
+                </div>
+            </div>
+            <div className="divider2"/>
         </header>
     );
 }

@@ -1,0 +1,100 @@
+.Book_frame{
+    margin:5% 0%;
+    position: relative;
+    width: 1080px;
+    height: 310.21px;
+}
+
+.Book_isbn{
+    position: relative;
+    height: 22px;
+    left: 45%;
+    
+    /* Paragraph */
+    font-family: 'Rubik';
+    font-style: normal;
+    font-weight: 400;
+    font-size: 1rem;
+    line-height: 1.5rem;
+    /* identical to box height, or 138% */
+    
+    color: #95A1BB;
+}
+
+.Book_LookDetail{
+    position: relative;
+    height: 20px;
+    left: 73.8%;
+    right: 0%;
+    background-color: white;
+    border:none;
+    transition: transform 0.3s ease; /* 확대 효과 전환 */
+    
+    font-family: 'Rubik';
+    font-style: normal;
+    font-weight: 500;
+    font-size: 2rem;
+    line-height: 1.25rem;
+    /* identical to box height, or 62% */
+    text-align: right;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    
+    color: #000000;
+}
+
+.Book_LookDetail:hover{
+    transform: scale(1.1); /* hover 시 확대 */
+}
+
+.Book_description{
+    position: relative;
+    height: 66px;
+    left: 45%;
+    right: 0%;
+    
+    font-family: 'Rubik';
+    font-style: normal;
+    font-weight: 400;
+    font-size: 1.25rem;
+    line-height: 1.25rem;
+    /* or 110% */
+    
+    color: #363940;
+}
+
+.Book_title{
+    position: relative;
+    height: 28px;
+    left: 45%;
+    right: 0%;
+    
+    font-family: 'Rubik';
+    font-style: normal;
+    font-weight: 500;
+    font-size: 36px;
+    line-height: 28px;
+    /* identical to box height, or 78% */
+    
+    color: #363940;
+}
+
+.Book_thumbnail{
+    position: relative;
+    width: 370px;
+    height: 310px;
+    left: 0px;
+    top: 0px;
+    border-radius:20px;
+}
+
+.Book_thumbnailFrame{
+    position: absolute;
+    width: 370px;
+    height: 310px;
+    left: 0px;
+    top: 0px;
+    
+    background: #F4FCBB;
+    border-radius: 20px;
+}

@@ -44,7 +44,7 @@ def update_books_description():
         cursor = connection.cursor(dictionary=True)
 
         # ISBN 조회
-        cursor.execute("SELECT id, isbn FROM books WHERE description IS NULL OR description = '' limit 3000;")
+        cursor.execute("SELECT id, isbn FROM external_books WHERE description IS NULL OR description = '' limit 1000;")
         books = cursor.fetchall()
 
         # 각 ISBN에 대해 알라딘 API로 데이터 가져와 업데이트
@@ -54,7 +54,7 @@ def update_books_description():
             description = fetch_book_description(isbn)
 
             if description:
-                cursor.execute("UPDATE books SET description = %s WHERE id = %s", (description, book_id))
+                cursor.execute("UPDATE external_books SET description = %s WHERE id = %s", (description, book_id))
                 print(f"Updated book ID {book_id} with description.")
         
         # 변경사항 커밋

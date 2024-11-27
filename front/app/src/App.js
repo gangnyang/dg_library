@@ -1,21 +1,22 @@
 import react from 'react';
-import Header from './Components/Header';
-import MainBanner from './Components/MainBanner';
-import Search from './Components/Search';
-import BookList from './Components/BookList';
-import LoadButton from './Components/LoadButton';
-import logo from './logo.svg';
-import './App.css';
+import {BrowserRouter as Router, Routes, Route} from "react-router-dom";
+import Main from './Page/Main';
+import Login from './Page/Login';
+import Register from './Page/Register';
+import ExternalLibrary from './Page/ExternalLibrary';
+import Programs from './Page/Programs';
 
 function App() {
   return (
-    <div className="App">
-      <Header/>
-      <MainBanner/>
-      <Search/>
-      <BookList/>
-      <LoadButton/>
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Main/>} /> 
+        <Route path="/register" element={<Register/>} />
+        <Route path="/login" element={<Login/>} />
+        <Route path="/externallib" element={<ExternalLibrary/>} />
+        <Route path="/programs" element={<Programs/>} />
+      </Routes>
+    </Router>
   );
 }
 
