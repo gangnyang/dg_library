@@ -1,12 +1,18 @@
 import React from "react";
+import {useNavigate} from "react-router-dom";
 import "./css/Book.css";
 
 function Book({book}) {
+    const navigate = useNavigate();
+
+    const handleDetailClick = () => {
+        navigate(`/BookDetail/${book.id}`);
+    }
     return (
         <div className="Book_frame">
             <div className="Book_thumbnailFrame">
                 <div className="Book_thumbnail" >
-                    <img src={book.img} alt="Book Thumbnail"/>
+                    <img className="Book_thumbnailImage" src={book.image} alt="Book Thumbnail"/>
                 </div>
             </div>
             <div className="BookDetail">
@@ -14,7 +20,7 @@ function Book({book}) {
                 <p className="Book_description">{book.author}</p>
                 <p className="Book_description">{book.description}</p>
                 <p className="Book_isbn">{book.isbn}</p>
-                <button className="Book_LookDetail">상세 정보 보기</button>
+                <button className="Book_LookDetail" onClick={handleDetailClick} >상세 정보 보기</button>
             </div>
         </div>
     );

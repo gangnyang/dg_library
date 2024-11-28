@@ -1,8 +1,8 @@
-import react from 'react';
+import react, {useState} from 'react';
 import Header from '../Components/Header';
 import MainBanner from '../Components/MainBanner';
 import Search from '../Components/Search';
-import BookList from '../Components/BookList';
+import ProgramList from '../Components/ProgramList';
 import LoadButton from '../Components/LoadButton';
 import BottomImage from '../Components/BottomImage';
 import styled from "styled-components";
@@ -17,6 +17,10 @@ const Frame = styled.div`
 `
 
 function Programs() {
+    const [limit, setLimit] = useState(20);
+    const handleMoreClick = (newLimit) => {
+        setLimit(newLimit);
+    };
     return (
         <Frame>
             <Header/>
@@ -26,12 +30,10 @@ function Programs() {
                 description="도서관에서 진행하는 다양한 프로그램을 살펴봐요"
                 imagesrc="/images/programs.jpg"
             />
-            <Search
-                query="프로그램명"
-                ph="프로그램명 입력"
+            <ProgramList 
+                limit={limit}
             />
-            <BookList/>
-            <LoadButton/>
+            <LoadButton limit={limit} onMoreClick={handleMoreClick} />
             <BottomImage/>
         </Frame>
     );

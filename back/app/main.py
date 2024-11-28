@@ -1,17 +1,27 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from .routers import users, books, comments, loan, external_books, programs, librarians
 
 app = FastAPI()
 
+# CORS 설정
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # React 개발 서버 주소
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # 각 파일에서 정의된 라우터를 main에 추가
-app.include_router(users.router, prefix="/api/users", tags=["User"])
-app.include_router(books.router, prefix="/api/books", tags=["Book"])
-app.include_router(comments.router, prefix="/api/comments", tags=['Comments'])
-app.include_router(loan.router, prefix="/api/loan", tags=["Loan"])
-app.include_router(external_books.router, prefix="/api/external_books", tags=["External_books"])
-app.include_router(programs.router, prefix="/api/programs", tags=["Programs"])
-app.include_router(librarians.router, prefix="/api/librarians", tags=["Librarians"])
+app.include_router(users.router, prefix="", tags=["User"])
+app.include_router(books.router, prefix="", tags=["Book"])
+app.include_router(comments.router, prefix="", tags=['Comments'])
+app.include_router(loan.router, prefix="", tags=["Loan"])
+app.include_router(external_books.router, prefix="", tags=["External_books"])
+app.include_router(programs.router, prefix="", tags=["Programs"])
+app.include_router(librarians.router, prefix="", tags=["Librarians"])
 
 @app.get("/")
 def root():

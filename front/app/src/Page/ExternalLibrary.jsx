@@ -1,4 +1,4 @@
-import react from 'react';
+import react, {useState} from 'react';
 import Header from '../Components/Header';
 import MainBanner from '../Components/MainBanner';
 import Search from '../Components/Search';
@@ -17,6 +17,14 @@ const Frame = styled.div`
 `
 
 function ExternalLibrary() {
+    const [limit, setLimit] = useState(20);
+    const handleMoreClick = (newLimit) => {
+        setLimit(newLimit);
+    };
+    const[squery, setSquery] = useState("");
+    const handleSearchClick = (newSquery) => {
+        setSquery(newSquery);
+    }
     return (
         <Frame>
             <Header/>
@@ -29,9 +37,15 @@ function ExternalLibrary() {
             <Search
                 query="도서명"
                 ph = "도서명 혹은 작가명 입력"
+                squery={squery}
+                onSearchClick={handleSearchClick}
             />
-            <BookList/>
-            <LoadButton/>
+            <BookList
+                Page="external_books"
+                limit={limit}
+                squery={squery}
+            />
+            <LoadButton limit={limit} onMoreClick={handleMoreClick} />
             <BottomImage/>
         </Frame>
     );

@@ -1,15 +1,16 @@
 .Book_frame{
     margin:5% 0%;
     position: relative;
+    display:flex;
+    flex-direction:row;
     width: 1080px;
     height: 310.21px;
 }
 
 .Book_isbn{
     position: relative;
-    height: 22px;
+    height: 1.4rem;
     left: 45%;
-    
     /* Paragraph */
     font-family: 'Rubik';
     font-style: normal;
@@ -23,17 +24,17 @@
 
 .Book_LookDetail{
     position: relative;
-    height: 20px;
-    left: 73.8%;
-    right: 0%;
-    background-color: white;
-    border:none;
+    left: 100%;
+    top: -10%;
+    height: 2rem;
+    border:1px solid grey;
+    border-radius: 0.5rem;
     transition: transform 0.3s ease; /* 확대 효과 전환 */
     
     font-family: 'Rubik';
     font-style: normal;
     font-weight: 500;
-    font-size: 2rem;
+    font-size: 1.5rem;
     line-height: 1.25rem;
     /* identical to box height, or 62% */
     text-align: right;
@@ -41,6 +42,32 @@
     text-transform: uppercase;
     
     color: #000000;
+}
+
+.SubmitButton{
+    box-sizing: border-box;
+
+    /* Auto layout */
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    padding: 12px 16px;
+    gap: 12px;
+    margin-bottom: 3%;
+    position: relative;
+    width: 60%;
+    left: 100%;
+    top: -10%;
+    
+    border: 1px solid #777E91;
+    border-radius: 5.5rem;
+
+    transition: transform 0.3s ease; /* 확대 효과 전환 */
+}
+
+.SubmitButton:hover{
+    transform: scale(1.1); /* hover 시 확대 */
 }
 
 .Book_LookDetail:hover{
@@ -81,20 +108,34 @@
 
 .Book_thumbnail{
     position: relative;
-    width: 370px;
-    height: 310px;
+    width: 100%;
+    height: 100%;
     left: 0px;
     top: 0px;
     border-radius:20px;
 }
 
 .Book_thumbnailFrame{
-    position: absolute;
-    width: 370px;
-    height: 310px;
+    position: relative;
+    width: 40%;
+    height: 100%;
     left: 0px;
     top: 0px;
     
     background: #F4FCBB;
     border-radius: 20px;
+}
+
+.Book_thumbnailImage{
+    position: absolute;
+    width: 100%; /* 원하는 너비 */
+    height: 100%; /* 원하는 높이 */
+    left: 0px;
+    top: 0px;
+    overflow: hidden; /* 컨테이너를 넘어가는 부분 숨기기 */
+    background: #F4FCBB;
+    border-radius: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center; /* 중앙 정렬 */
 }

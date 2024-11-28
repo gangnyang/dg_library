@@ -1,9 +1,9 @@
 import React from "react";
 import './css/LoadButton.css';
 
-function LoadButton(){
+function LoadButton({limit, onMoreClick}){
     return(
-        <button className="LoadButton">10개 더 불러오기</button>
+        <button className="LoadButton" onClick={() => onMoreClick(limit+10)}>10개 더 불러오기</button>
     );
 }
 

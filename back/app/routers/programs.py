@@ -36,7 +36,7 @@ def get_programs(limit: int = 20, db: Session = Depends(get_db)):
     try:
         # 도서관 프로그램 조회 쿼리
         query = """
-        SELECT id, name, description, event_date, participants
+        SELECT id, name, description, event_date, participants, image
         FROM programs
         ORDER BY event_date ASC
         LIMIT :limit
@@ -50,7 +50,8 @@ def get_programs(limit: int = 20, db: Session = Depends(get_db)):
                 "name": row["name"],
                 "description": row["description"],
                 "event_date": row["event_date"],
-                "participants": row["participants"]
+                "participants": row["participants"],
+                "image": row["image"]
             }
             for row in results
         ]

@@ -41,8 +41,7 @@ def get_external_books(
     author: str = Query(None),
     limit: int = Query(20),
     offset: int = Query(0),
-    db: Session = Depends(get_db),
-    current_user: str = Depends(token.get_current_user)
+    db: Session = Depends(get_db)
 ):
     try:
         query = """

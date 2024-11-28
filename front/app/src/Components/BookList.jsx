@@ -1,14 +1,19 @@
-import React from "react";
+import React, {useState, useEffect} from "react";
 import Book from "./Book";
 import './css/BookList.css';
+import axios from "axios";
 
-function BookList(){
-    const books = [
-        {id:1, title: "책 제목", author: "누구누구 지음", image:"/images/Books_MBimage.jpg", description:"상세설명 있어요", isbn:"123123123"},
-        {id:1, title: "책 제목", author: "누구누구 지음", image:"/images/Books_MBimage.jpg", description:"상세설명 있어요", isbn:"123123123"},
-        {id:1, title: "책 제목", author: "누구누구 지음", image:"/images/Books_MBimage.jpg", description:"상세설명 있어요", isbn:"123123123"},
-        {id:1, title: "책 제목", author: "누구누구 지음", image:"/images/Books_MBimage.jpg", description:"상세설명 있어요", isbn:"123123123"},
-    ];
+function BookList({Page, limit}){
+    const [books, setBooks] = useState([]);
+
+    useEffect(() => {
+        axios
+        .get(`http://127.0.0.1:8000/api/${Page}?limit=${limit}&offset=0`)
+        .then((response) => setBooks(response.data["books"]))
+        .catch((error) => console.error(error));
+    }, [limit]);
+
+
     return(
         <div className="BookList">
             {books.map((book)=>(
