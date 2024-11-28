@@ -1,0 +1,111 @@
+.LoanFrame{
+    position: relative;
+    width: 100%;
+    
+    
+    /* Inside auto layout */
+    flex: none;
+    order: 1;
+    align-self: center;
+    flex-grow: 0;
+}
+
+.LoanBox{
+    position: relative;
+}
+
+.LoanBackground{
+    position: relative;
+    
+    background: #F7F7F7;
+    border-radius: 1rem;
+}
+
+.LoanID{
+    position: relative;
+    width: auto;
+    padding-top: 2%;
+    padding-left: 2%;
+    font-family: 'Open Sans';
+    font-style: normal;
+    font-weight: 700;
+    font-size: 1rem;
+    line-height: 1.5rem;
+    /* identical to box height, or 150% */
+    
+    color: #182135;
+}
+
+.LoanInnerFrame{
+    position:relative;
+    width: 100%;
+    height:auto;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.StatusFrame{
+    position: relative;
+    width:75%;
+    display:flex;
+    flex-direction: row;
+    align-items: center;
+    padding-left: 2%;
+    gap: 10%;
+}
+
+.StatusTextFrame{
+    position: relative;
+}
+
+.StatusTitle{
+    position: relative;
+    width: auto;
+    height: auto;
+    
+    font-family: 'Open Sans';
+    font-style: normal;
+    font-weight: 700;
+    font-size: 1.5rem;
+    line-height: 2rem;
+    /* identical to box height, or 133% */
+    
+    color: #182135;
+}
+
+.StatusSubTitle{
+    position: relative;
+    width: auto;
+    
+    font-family: 'Open Sans';
+    font-style: normal;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 24px;
+    /* identical to box height, or 171% */
+    
+    color: #626264;
+}
+
+.ReturnButton{
+    position: relative;
+    width:20%;
+
+    background: #000000;
+    border-radius: 0.5rem;
+}
+
+.ReturnButtonText{
+    position: relative;
+    
+    font-family: 'Open Sans';
+    font-style: normal;
+    font-weight: 700;
+    font-size: 1rem;
+    line-height: 1.5rem;
+    /* identical to box height, or 171% */
+    text-align: center;
+    
+    color: #F7FAFC;
+}

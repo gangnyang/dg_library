@@ -11,12 +11,12 @@ function Header() {
                     <a href="/">메인</a>
                     <a href="/externallib">다른 도서관 책</a>
                     <a href="/programs">프로그램</a>
-                    <a href="#">오시는 길</a>
+                    <a href="/Skmap">오시는 길</a>
                 </div>
                 <div className="Mypage_frame">
-                    <button className="Mypage_button">
+                    <a href="/Mypage" className="Mypage_button">
                         <div className="logo"/>
-                    </button>
+                    </a>
                 </div>
             </div>
             <div className="divider2"/>

@@ -1,0 +1,95 @@
+.BookInfoFrame{
+    position: relative;
+    display: flex;
+    flex-direction: row; /* 요소를 수직으로 배치 */
+    width: 90vw;
+    height: 50vh;
+    margin-top: 3%;
+    left:15%;
+}
+
+.BookInfo_imageBox{
+    position: relative;
+    width: 30%;
+    height: 70%;
+    overflow: hidden; /* 박스 밖으로 나간 부분 숨기기 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #777E90;
+    border-radius: 1.25rem;
+}
+
+.BookInfo_image{
+    width: 100%;
+    height:100%;
+    object-fit: cover;
+    display: block;
+    max-width: none;
+    max-height: none;
+}
+
+.BookInfo_Box{
+    width:100%;
+    margin: 0% 5%;
+    position:relative;
+    display: flex;
+    flex-direction: column;
+    
+}
+
+.BookInfo_title{
+    position: relative;
+    
+    /* Headline 4 */
+    font-family: 'DM Sans';
+    font-style: normal;
+    font-weight: 700;
+    font-size: 2rem;
+    line-height: 2.5rem;
+    /* identical to box height, or 125% */
+    letter-spacing: -0.01em;
+    
+    color: #182135;
+}
+
+.BookInfo_description{
+    position: relative;
+    width: 100%;
+    
+    /* Text/Body/Normal/Regular */
+    font-family: 'Open Sans';
+    font-style: normal;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 24px;
+    /* or 150% */
+    
+    color: #626264;
+}
+
+.BookInfo_loan{
+    position: relative;
+    display: flex;
+    justify-content: center;
+    width:30%;
+    border: none;
+    border-radius: 1.25rem;
+}
+
+.BookInfo_loanText{
+    position: relative;
+    height: 1.25rem;
+    
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: 500;
+    font-size: 1rem;
+    line-height: 1.25rem;
+    /* identical to box height, or 143% */
+    display: flex;
+    align-items: center;
+    text-align: center;
+    
+    color: #000000;
+}

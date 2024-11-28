@@ -10,6 +10,7 @@ const Frame = styled.div`
     width: 100vw; /* 가로 크기 */
     height:100vh;
     margin: 0 auto;
+    overflow-x: hidden;
 `
 
 function Login() {

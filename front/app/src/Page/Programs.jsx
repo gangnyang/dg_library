@@ -11,8 +11,9 @@ const Frame = styled.div`
     display: flex;
     flex-direction: column; /* 요소를 수직으로 배치 */
     align-items: center; /* 요소를 중앙 정렬 (수평 기준) */
-    width: 100vw; /* 가로 크기 */
+    width: 99vw; /* 가로 크기 */
     margin: 0 auto;
+    overflow-x: hidden;
 `
 
 function Programs() {

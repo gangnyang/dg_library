@@ -1,0 +1,73 @@
+.CategoryFrame {
+    position:relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 3rem 2rem;
+    gap: 2.5rem;
+
+    width: 16rem;
+    height: 24rem;
+
+    background: #FCFCFD;
+    border: 1px solid #F4F5F6;
+    /* depth/4 */
+    box-shadow: 0 4rem 4rem -3rem rgba(15, 15, 15, 0.08);
+    border-radius: 1rem;
+
+    /* Inside auto layout */
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+}
+
+.ListFrame1 {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0;
+    gap: 1rem;
+
+    height: 1rem;
+
+    /* Inside auto layout */
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+}
+
+.ListFrame1Logo {
+    width: 16px;
+    height: 16px;
+
+    /* Inside auto layout */
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+}
+
+.ListFrame1Title {
+    width: 8rem;
+    height: 1rem;
+
+    /* Button 2 */
+    font-family: 'DM Sans';
+    font-style: normal;
+    font-weight: 1000;
+    font-size: 0.8rem;
+    line-height: 1rem;
+    /* identical to box height, or 114% */
+    display: flex;
+    align-items: center;
+
+    color: #777E90;
+    /* Inside auto layout */
+    flex: none;
+    order: 1;
+    flex-grow: 1;
+}
+
+.ListFrame1Title.active{
+    color:black;
+}

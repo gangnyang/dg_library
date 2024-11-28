@@ -1,0 +1,196 @@
+/* review */
+
+/* Auto layout */
+
+.CommentListFrame {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 40px 0 0;
+    gap: 40px;
+
+    position: relative;
+    width: 1116px;
+}
+
+.CommentStartFrame{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 0px;
+    gap: 8px;
+    
+    width: 1116px;
+    height: 32px;
+    
+    
+    /* Inside auto layout */
+    flex: none;
+    order: 0;
+    align-self: stretch;
+    flex-grow: 0;
+}
+
+.CommentStart{
+    
+    /* Body 1 (Bold) */
+    font-family: 'Poppins';
+    font-style: normal;
+    font-weight: 600;
+    font-size: 24px;
+    line-height: 32px;
+    /* identical to box height, or 133% */
+    
+    color: #23262F;
+    
+    
+    /* Inside auto layout */
+    flex: none;
+    order: 0;
+    align-self: stretch;
+    flex-grow: 0;
+}
+
+.CommentInputBox{
+    position: relative;
+    display: flex; /* 입력 칸과 버튼을 수평으로 정렬 */
+    align-items: center; /* 버튼과 입력 칸을 수직 중앙 정렬 */
+    gap: 10px; /* 입력 칸과 버튼 사이의 간격 */
+    width: 100%; /* 전체 컨테이너의 너비 */
+}
+
+.CommentInput{
+    box-sizing: border-box;
+
+    /* Auto layout */
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 16px 16px 24px;
+    gap: 10px;
+    
+    width: 100%;
+    height: 72px;
+    
+    border: 2px solid #E6E8EC;
+    border-radius: 16px;
+    
+    /* Inside auto layout */
+    flex: none;
+    order: 0;
+    align-self: stretch;
+    flex-grow: 0;
+}
+
+.CommentInput::placeholder{
+    margin: 0 auto;
+    
+    font-family: 'Poppins';
+    font-style: normal;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 24px;
+    /* identical to box height, or 150% */
+    
+    color: #777E91;
+    
+    
+    /* Inside auto layout */
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+}
+
+.CommentInputButton{
+    position:absolute;
+    right: 1rem; /* 입력 칸 오른쪽 여백 */
+    top: 50%; /* 세로 중앙 정렬 */
+    transform: translateY(-50%); /* 세로 중앙 정렬 보정 */
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    padding: 0px;
+    gap: 16px;
+    
+    margin: 0 auto;
+    
+    /* Inside auto layout */
+    flex: none;
+    order: 1;
+    flex-grow: 0;
+}
+
+.CommentInputButton[type="submit"]{
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    padding: 12px 16px;
+    gap: 12px;
+    
+    
+    background: #141416;
+    border-radius: 90px;
+    
+    /* Inside auto layout */
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+}
+
+.CommentInputButton[value="작성하기"]{
+    
+    font-family: 'DM Sans';
+    font-style: normal;
+    font-weight: 700;
+    font-size: 1rem;
+    line-height: 1rem;
+    /* identical to box height, or 114% */
+    
+    color: #FCFCFD;
+    
+    
+    /* Inside auto layout */
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+}
+
+.CommentList{
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 0px;
+    gap: 32px;
+
+    width: 100%;
+
+
+    /* Inside auto layout */
+    flex: none;
+    order: 2;
+    align-self: stretch;
+    flex-grow: 0;
+}
+
+.CommentNumber{
+    position: relative;
+    /* Body 1 (Bold) */
+    font-family: 'Poppins';
+    font-style: normal;
+    font-weight: 600;
+    font-size: 24px;
+    line-height: 32px;
+    /* identical to box height, or 133% */
+    
+    color: #23262F;
+    
+    
+    /* Inside auto layout */
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+}
