@@ -1,13 +1,16 @@
 .MainBanner{
     position: relative;
     width: 100%;
-    height: 70vh;
+    height: auto;
 }
 
 .BannerBox{
     position: relative;
+    display: flex;
+    flex-direction: row;
     width: 100%;
-    height: 100%;
+    height: auto;
+    gap: 10%;
 }
 
 .BannerTextBox{
@@ -15,14 +18,12 @@
     flex-direction: column;
     align-items: flex-start;
     padding: 0%;
-    gap: 4vw;
+    gap: 10%;
     
     position: relative;
-    width: 40vw;
-    height: 30vh;
-    left: 10vw;
-    top: 10vh;
-    
+    width: 100%;
+    height: 100%;
+    left:5%;
 }
 
 .BannerText{
@@ -30,8 +31,8 @@
     flex-direction: column;
     align-items: flex-start;
     padding: 0%;
-    gap: 2vw;
-    
+    gap: 1rem;
+    position: relative;
     width: 100%;
     height: 100%;
     
@@ -47,8 +48,8 @@
     font-family: 'DM Sans';
     font-style: normal;
     font-weight: 700;
-    font-size: 96px;
-    line-height: 96px;
+    font-size: 6rem;
+    line-height: 6rem;
     /* or 100% */
     letter-spacing: -0.02em;
     
@@ -66,8 +67,9 @@
     font-family: 'Poppins';
     font-style: normal;
     font-weight: 400;
-    font-size: 16px;
-    line-height: 24px;
+    font-size: 1rem;
+    line-height: 1.5rem;
+    margin-bottom: 10%;
     /* or 150% */
     
     color: #000000;
@@ -82,14 +84,13 @@
 
 .BannerImage{
     position: relative;
-    width: 40%;
-    height: 100%;
-    left: 60%;
-    top: -43%;
-    
+    width: 50%;
+    height: 80vh;
+    overflow: hidden;
+    object-fit: cover;
 }
 
 .image{
-    width: 100%;
     height: 100%;
+    object-fit:cover;
 }
