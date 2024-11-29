@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, APIRouter, Depends, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -26,10 +26,18 @@ def get_db():
     finally:
         db.close()
 
-@router.post("/api/comments")
+class CommentRequest(BaseModel):
+    book_id: int
+    context: str
+    parent_id: int | None = None
+
+class CommentUpdateRequest(BaseModel):
+    comment_id: int
+    context: str
+
+@router.get("/api/comments")
 def get_comments(
     book_id: int,
-    limit: int = 20,
     db: Session = Depends(get_db)
 ):
     try:
@@ -39,12 +47,13 @@ def get_comments(
         FROM comments
         WHERE book_id = :book_id AND parent_id IS NULL
         ORDER BY created DESC
-        LIMIT :limit
         """
-        top_comments = db.execute(text(query), {"book_id": book_id, "limit": limit}).mappings().fetchall()
+        top_comments = db.execute(text(query), {"book_id": book_id}).mappings().fetchall()
 
         # 최상위 댓글의 ID 목록 가져오기
         parent_ids = [comment["id"] for comment in top_comments]
+
+        comment_count = db.execute(text("SELECT COUNT(*) AS count FROM comments WHERE book_id = :book_id"), {"book_id":book_id}).mappings().fetchone()
 
         # 대댓글 가져오기 (parent_id가 상위 댓글 ID 중 하나인 경우)
         if parent_ids:
@@ -84,7 +93,11 @@ def get_comments(
                 "replies": reply_map.get(comment["id"], []),
             })
 
-        return result
+
+        return {
+            "count":comment_count,
+            "result":result,
+            }
 
     except Exception as e:
         raise HTTPException(
@@ -94,9 +107,7 @@ def get_comments(
 
 @router.post("/api/comments/add")
 def create_comment(
-    book_id: int,
-    context: str,
-    parent_id: int | None = None,
+    request: CommentRequest,
     db: Session = Depends(get_db),
     current_user: str = Depends(token.get_current_user),  # JWT 인증된 유저
 ):
@@ -119,10 +130,10 @@ def create_comment(
         VALUES (:book_id, :user_id, :parent_id, :context, :created, :updated)
         """
         db.execute(text(query_insert_comment), {
-            "book_id": book_id,
+            "book_id": request.book_id,
             "user_id": user_id,
-            "parent_id": parent_id,
-            "context": context,
+            "parent_id": request.parent_id,
+            "context": request.context,
             "created": current_time,
             "updated": current_time,
         })
@@ -142,10 +153,9 @@ def create_comment(
             detail=f"댓글 작성 중 오류가 발생했습니다.{str(e)}"
         )
 
-@router.put("/api/comments/{comment_id}")
+@router.put("/api/comments/")
 def update_comment(
-    comment_id: int,
-    context: str,
+    request: CommentUpdateRequest,
     db: Session = Depends(get_db),
     current_user: str = Depends(token.get_current_user), 
 ):
@@ -156,7 +166,7 @@ def update_comment(
         FROM comments
         WHERE id = :comment_id
         """
-        comment = db.execute(text(query_check_comment), {"comment_id": comment_id}).mappings().fetchone()
+        comment = db.execute(text(query_check_comment), {"comment_id": request.comment_id}).mappings().fetchone()
 
         user_id = db.execute(
             text("SELECT id FROM users WHERE username = :username"),
@@ -178,16 +188,16 @@ def update_comment(
             )
 
         # 댓글 내용 업데이트
-        current_time = datetime.utcnow()
+        current_time = datetime.now(timezone('Asia/Seoul'))
         query_update_comment = """
         UPDATE comments
         SET context = :context, updated = :updated
         WHERE id = :comment_id
         """
         db.execute(text(query_update_comment), {
-            "context": context,
+            "context": request.context,
             "updated": current_time,
-            "comment_id": comment_id
+            "comment_id": request.comment_id
         })
 
         db.commit()

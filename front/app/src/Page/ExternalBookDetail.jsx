@@ -1,5 +1,5 @@
 import react from "react";
-import {useNavigate} from "react-router-dom"
+import {useNavigate, useParams} from "react-router-dom"
 import styled from "styled-components";
 import Header from "../Components/Header"
 import BookInfo from "../Components/BookInfo";
@@ -16,18 +16,19 @@ const Frame = styled.div`
 `
 
 function ExternalBookDetail(){
+    const {id} = useParams();
     return(
         <Frame>
             <Header/>
             <BookInfo 
-                BookTitle="제목"
-                BookAuthor="~~~"
-                BookDescription="~~~~~~"
-                BookImg="images/Books_MBimage.jpg"
-                ButtonColor="#FCD9BB"
-                ButtonText="상호대차 신청하기"
+                Book_id={id}
+                Tag ="external_books/interloan"
+                Tag2 = "external_books"
+                ButtonText="상호대차 신청"
             />
-            <CommentList />
+            <CommentList 
+                Book_id={id}
+            />
             <BottomImage />
         </Frame>
     );

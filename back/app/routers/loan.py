@@ -48,10 +48,7 @@ def get_loan_history(
         result = db.execute(text(query_user), {"username": current_user}).mappings().fetchone()
 
         if not result:
-            raise HTTPException(
-                status_code=404,
-                detail="유저 정보를 찾을 수 없습니다."
-            )
+            return {"message": "유저 정보를 찾을 수 없습니다."}
 
         user_id = result["id"]
 
@@ -129,13 +126,21 @@ def get_book_loan_history(
 @router.put("/api/loan/return/{loan_id}")
 def return_loan(
     loan_id: int,  # 대출 ID (URL 경로 매개변수)
-    returned_date: str,
-    status: str,
-    overdue: int,
     db: Session = Depends(get_db),
     current_user: str = Depends(token.get_current_user)  # JWT 인증된 유저 확인
 ):
     try:
+        # 현재 유저의 user_id 가져오기
+        query_user = """
+        SELECT id FROM users WHERE username = :username
+        """
+        result = db.execute(text(query_user), {"username": current_user}).mappings().fetchone()
+
+        if not result:
+            return {"message": "유저 정보를 찾을 수 없습니다."}
+        
+        user_id = result["id"]
+
         # 대출 기록 존재 여부 확인
         query_check_loan = """
         SELECT id, status FROM loan WHERE id = :loan_id
@@ -150,6 +155,10 @@ def return_loan(
 
         if loan_record["status"] == "returned":
             return {"message": "이미 반납된 대출입니다."}
+        
+        returned_date= datetime.now(timezone('Asia/Seoul'))
+        status= "returned"
+        overdue= 0
 
         # 대출 기록 업데이트
         query_update_loan = """
@@ -193,7 +202,8 @@ def update_overdue_status(db: Session = Depends(get_db)):
         query_update_overdue = """
         UPDATE loan
         SET overdue = 1, status = 'overdue'
-        WHERE will_return_date < :current_date AND returned_date IS NULL AND overdue = 0
+        WHERE (will_return_date < :current_date AND returned_date IS NULL AND overdue = 0)
+        OR (will_return_date < returned_date AND overdue = 0)
         """
         result = db.execute(text(query_update_overdue), {"current_date": current_date})
 

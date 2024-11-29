@@ -6,6 +6,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import text
 from back.app.services import token
+from pytz import timezone
+from datetime import datetime, timedelta
 
 router = APIRouter()
 
@@ -39,24 +41,20 @@ def get_db():
 @router.get("/api/books")
 def get_books(
     title: str = Query(None),
-    author: str = Query(None),
     limit: int = Query(20),
     offset: int = Query(0),
     db: Session = Depends(get_db)
 ):
     try:
         query = """
-        SELECT id, author, title, publicate_year, regist_day, status, borrowed, isbn, image 
+        SELECT id, author, title, publicate_year, regist_day, status, borrowed, isbn, image, description
         FROM books 
         WHERE 1=1
         """
         query_params = {}
         if title:
-            query += " AND title LIKE :title"
+            query += " AND ( title LIKE :title OR author LIKE :title )"
             query_params["title"] = f"%{title}%"
-        if author:
-            query += " AND author LIKE :author"
-            query_params["author"] = f"%{author}%"
         count_query = f"SELECT COUNT(*) FROM ({query}) as total"
         query += " LIMIT :limit OFFSET :offset"
         query_params["limit"] = limit
@@ -73,7 +71,8 @@ def get_books(
                 "status": row["status"],
                 "borrowed": row["borrowed"],
                 "isbn": row["isbn"],
-                "image": row["image"]
+                "image": row["image"],
+                "description": row["description"]
             }
             for row in result
         ]
@@ -91,7 +90,7 @@ def get_books(
 def get_book_details(book_id: int, db: Session = Depends(get_db)):
     try:
         query = """
-        SELECT id, author, title, publicate_year, regist_day, status, borrowed, isbn, image
+        SELECT id, author, title, publicate_year, regist_day, status, borrowed, isbn, image, description
         FROM books
         WHERE id = :book_id
         """
@@ -107,7 +106,8 @@ def get_book_details(book_id: int, db: Session = Depends(get_db)):
             "status": result["status"],
             "borrowed": result["borrowed"],
             "isbn": result["isbn"],
-            "image": result["image"]
+            "image": result["image"],
+            "description": result["description"]
         }
     except Exception as e:
         raise HTTPException(
@@ -118,8 +118,6 @@ def get_book_details(book_id: int, db: Session = Depends(get_db)):
 @router.put("/api/books/{book_id}")
 def loan_book(
     book_id: int,
-    loan_date: str,
-    will_return_date: str,
     db: Session = Depends(get_db),
     current_user: str = Depends(token.get_current_user)
 ):
@@ -134,6 +132,9 @@ def loan_book(
             status_code=404,
             detail="유저 정보가 잘못되었습니다."
         )
+
+        loan_date = datetime.now(timezone('Asia/Seoul'))
+        will_return_date = loan_date + timedelta(14)
         
         user_id = user_id[0]
 
@@ -166,7 +167,7 @@ def loan_book(
 
         query = """
         UPDATE books
-        SET borrowed = borrowed + 1, status = "borrowed"
+        SET status = "borrowed"
         WHERE id = :book_id
         """
         db.execute(text(query), {"book_id": book_id})

@@ -3,14 +3,14 @@ import './css/Loan.css';
 import axios from "axios";
 import { useToken } from "../TokenContext";
 
-function Loan({ item, onUpdate }) {
+function Interloan({ item, onUpdate }) {
     const [book, setBook] = useState([]);
-    const {token} = useToken();
     const [newStatus, setNewStatus] = useState(item.status);
+    const {token} = useToken();
 
     useEffect(() => {
         axios
-        .get(`http://127.0.0.1:8000/api/books/${item.book_id}`)
+        .get(`http://127.0.0.1:8000/api/external_books/${item.external_book_id}`)
         .then((response) => {
             setBook(response.data);
         })
@@ -19,21 +19,21 @@ function Loan({ item, onUpdate }) {
 
     const getIconSrc = () => {
         if (item.status === "progress") return "images/Clock.png";
-        if (item.status === "overdue") return "images/Sad.svg";
-        return "images/Happy.svg";
+        if (item.status === "complete") return "images/Happy.svg";
+        return "images/Sad.svg";
     };
 
     const getStatusTitle = () => {
-        if (item.status === "progress") return "대출 중";
-        if (item.status === "overdue") return "연체 상태";
-        return "반납 완료";
+        if (item.status === "progress") return "상호 대차 중";
+        if (item.status === "complete") return "반납 완료";
+        return "예기치 않은 상태";
     };
 
     const handleButtonClick = () => {
         const updatedData = {status: newStatus};
 
         axios
-            .put(`http://127.0.0.1:8000/api/loan/return/${item.id}`, updatedData, {
+            .put(`http://127.0.0.1:8000/api/external_books/return/${item.id}`, updatedData, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -73,11 +73,11 @@ function Loan({ item, onUpdate }) {
                                 alt="상태 아이콘"
                             />
                             <div className="StatusTextFrame">
-                                <p className="StatusSubTitle" >
-                                    책 이름: {book.title}
+                                <p className="StatusSubTitle">
+                                    상호대차 책 이름: {book.title}
                                 </p>
-                                <p className="StatusSubTitle">{item.loan_date}에 빌렸습니다.</p>
-                                <p className="StatusSubTitle">{item.will_return_date}까지 반납해야합니다.</p>
+                                <p className="StatusSubTitle">상태</p>
+                                <p className="StatusSubTitle">{item.request_date}에 빌렸습니다.</p>
                                 <h1 className="StatusTitle">
                                     {getStatusTitle(item)}
                                 </h1>
@@ -91,4 +91,4 @@ function Loan({ item, onUpdate }) {
     );
 }
 
-export default Loan;
+export default Interloan;

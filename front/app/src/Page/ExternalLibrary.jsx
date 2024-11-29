@@ -25,6 +25,10 @@ function ExternalLibrary() {
     const handleSearchClick = (newSquery) => {
         setSquery(newSquery);
     }
+    const[countBook, setCountBook] = useState(21);
+    const handleCalcCount = (newCount) => {
+        setCountBook(newCount);
+    }
     return (
         <Frame>
             <Header/>
@@ -39,13 +43,15 @@ function ExternalLibrary() {
                 ph = "도서명 혹은 작가명 입력"
                 squery={squery}
                 onSearchClick={handleSearchClick}
+                onSetLimit = {setLimit}
             />
             <BookList
                 Page="external_books"
                 limit={limit}
                 squery={squery}
+                countBook={handleCalcCount}
             />
-            <LoadButton limit={limit} onMoreClick={handleMoreClick} />
+            { limit<countBook && <LoadButton limit={limit} onMoreClick={handleMoreClick} /> }
             <BottomImage/>
         </Frame>
     );

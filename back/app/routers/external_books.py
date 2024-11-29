@@ -45,7 +45,7 @@ def get_external_books(
 ):
     try:
         query = """
-        SELECT id, author, title, publicate_year, regist_day, status, isbn, image 
+        SELECT id, author, title, publicate_year, regist_day, status, isbn, image, description
         FROM external_books 
         WHERE 1=1
         """
@@ -71,7 +71,8 @@ def get_external_books(
                 "regist_day": row["regist_day"],
                 "status": row["status"],
                 "isbn": row["isbn"],
-                "image": row["image"]
+                "image": row["image"],
+                "description": row["description"]
             }
             for row in result
         ]
@@ -85,6 +86,34 @@ def get_external_books(
             detail=f"책 리스트를 가져오는 중 오류가 발생했습니다. {str(e)}"
         )
     
+@router.get("/api/external_books/{book_id}")
+def get_external_book_details(book_id: int, db: Session = Depends(get_db)):
+    try:
+        query = """
+        SELECT id, author, title, publicate_year, regist_day, status, isbn, image, description
+        FROM external_books
+        WHERE id = :book_id
+        """
+        result = db.execute(text(query), {"book_id": book_id}).mappings().fetchone()
+        if not result:
+            raise HTTPException(status_code=404, detail="책 정보가 없습니다.")
+        return{
+            "id": result["id"],
+            "author": result["author"],
+            "title": result["title"],
+            "publicate_year": result["publicate_year"],
+            "regist_day": result["regist_day"],
+            "status": result["status"],
+            "isbn": result["isbn"],
+            "image": result["image"],
+            "description": result["description"]
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"책 정보를 가져오는 중 오류가 발생했습니다.{str(e)}"
+        )
+
 @router.put("/api/external_books/interloan/{external_book_id}")
 def interloan_book(
     external_book_id: int,
@@ -118,7 +147,7 @@ def interloan_book(
             )
 
         if book_status["status"] == "borrowed":
-            return {"message": "이미 대출 중인 책입니다.", "status": "already_borrowed"}
+            return {"message": "이미 상호대차 중인 책입니다.", "status": "already_borrowed"}
         
         # 상호대차 기록 삽입
         query_insert_loan = """
@@ -232,4 +261,51 @@ def return_loan(
         raise HTTPException(
             status_code=400,
             detail=f"반납 처리 중 오류가 발생했습니다. {str(e)}"
+        )
+    
+@router.get("/api/loan/user-interloan")
+def get_loan_history(
+    limit: int = 20,  # 최대 반환 개수
+    db: Session = Depends(get_db),
+    current_user: str = Depends(token.get_current_user),  # 인증된 유저
+):
+    try:
+        # 현재 유저의 user_id 가져오기
+        query_user = """
+        SELECT id FROM users WHERE username = :username
+        """
+        result = db.execute(text(query_user), {"username": current_user}).mappings().fetchone()
+
+        if not result:
+            return { "message": "유저 정보를 찾을 수 없습니다. "}
+
+        user_id = result["id"]
+
+        # 대출 내역 조회 쿼리
+        query = """
+        SELECT id, user_id, external_book_id, request_date, status
+        FROM interloan
+        WHERE user_id = :user_id
+        ORDER BY request_date DESC
+        LIMIT :limit
+        """
+        interloan_results = db.execute(text(query), {"user_id": user_id, "limit": limit}).mappings().fetchall()
+
+        # 결과를 JSON 형식으로 반환
+        interloan_history = [
+            {
+                "id": row["id"],
+                "user_id": row["user_id"],
+                "external_book_id": row["external_book_id"],
+                "request_date": row["request_date"],
+                "status": row["status"],
+            }
+            for row in interloan_results
+        ]
+        return interloan_history
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"대출 내역을 가져오는 중 오류가 발생했습니다. {str(e)}"
         )

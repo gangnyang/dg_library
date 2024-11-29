@@ -169,3 +169,23 @@ def withdraw(
             status_code=400,
             detail="오류가 발생했습니다."
         )
+
+@router.get("/api/users/{user_id}")
+def get_book_details(user_id: int, db: Session = Depends(get_db)):
+    try:
+        query = """
+        SELECT username
+        FROM users
+        WHERE id = :user_id
+        """
+        result = db.execute(text(query), {"user_id": user_id}).mappings().fetchone()
+        if not result:
+            raise HTTPException(status_code=404, detail="책 정보가 없습니다.")
+        return{
+            "username" : result["username"]
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"책 정보를 가져오는 중 오류가 발생했습니다.{str(e)}"
+        )

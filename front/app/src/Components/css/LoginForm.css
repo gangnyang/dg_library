@@ -206,12 +206,17 @@
     height: 3rem;
     background: #141416;
     border-radius: 90px;
+    transition: transform 0.3s ease;
     
     /* Inside auto layout */
     flex: none;
     order: 2;
     flex-grow: 0;
     
+}
+
+.LoginFormButton:hover{
+    transform: scale(1.1);
 }
 
 .LoginFormButtonText{

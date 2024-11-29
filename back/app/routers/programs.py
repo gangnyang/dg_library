@@ -43,6 +43,9 @@ def get_programs(limit: int = 20, db: Session = Depends(get_db)):
         """
         results = db.execute(text(query), {"limit": limit}).mappings().fetchall()
 
+        result = db.execute(text("SELECT COUNT(*) AS c FROM programs")).mappings().fetchone()
+
+
         # 결과를 JSON 형식으로 변환
         programs = [
             {
@@ -55,6 +58,8 @@ def get_programs(limit: int = 20, db: Session = Depends(get_db)):
             }
             for row in results
         ]
+
+        programs[0]["count"] = result["c"]
 
         return programs
 
@@ -182,10 +187,7 @@ def register_participant(
         program = db.execute(text(query_check_program), {"program_id": program_id}).mappings().fetchone()
 
         if not program:
-            raise HTTPException(
-                status_code=404,
-                detail="해당 프로그램을 찾을 수 없습니다."
-            )
+            return { "message": "프로그램을 찾을 수 없습니다." }
 
         # 참가자 중복 등록 확인
         query_check_participant = """
@@ -198,10 +200,7 @@ def register_participant(
         }).mappings().fetchone()
 
         if existing_participant:
-            raise HTTPException(
-                status_code=400,
-                detail="해당 사용자는 이미 프로그램에 등록되어 있습니다."
-            )
+            return { "message": "이미 등록된 회원입니다." }
 
         # 참가자 등록
         query_insert_participant = """
@@ -214,17 +213,17 @@ def register_participant(
             "joined": datetime.now(timezone('Asia/Seoul'))
         })
 
-        db.execute(text("UPDATE programs set participants = participants+1 WHERE id = :program_id"), {"program_id": program_id})
+        # db.execute(text("UPDATE programs set participants = participants+1 WHERE id = :program_id"), {"program_id": program_id})
 
         db.commit()
 
-        return {"message": "참가자 등록이 완료되었습니다."}
+        return {"message": "프로그램 참가 등록이 완료되었습니다."}
 
     except Exception as e:
         db.rollback()
         raise HTTPException(
             status_code=400,
-            detail=f"참가자 등록 중 오류가 발생했습니다. {str(e)}"
+            detail=f"프로그램 참가 등록 중 오류가 발생했습니다. {str(e)}"
         )
 
 @router.get("/api/programs/{program_id}/librarians")
@@ -268,10 +267,7 @@ def register_librarian(
         """
         librarian = db.execute(text(query_check_librarian), {"librarian_id": librarian_id}).mappings().fetchone()
         if not librarian:
-            raise HTTPException(
-                status_code=404,
-                detail="해당 담당자를 찾을 수 없습니다."
-            )
+            return { "message": "해당 담당자를 찾을 수 없습니다." }
         # 프로그램 존재 여부 확인
         query_check_program = """
         SELECT id FROM programs WHERE id = :program_id
@@ -279,10 +275,7 @@ def register_librarian(
         program = db.execute(text(query_check_program), {"program_id": program_id}).mappings().fetchone()
 
         if not program:
-            raise HTTPException(
-                status_code=404,
-                detail="해당 프로그램을 찾을 수 없습니다."
-            )
+            return { "message": "해당 프로그램을 찾을 수 없습니다." }
 
         # 담당자 중복 등록 확인
         query_check_participant = """
@@ -319,4 +312,88 @@ def register_librarian(
         raise HTTPException(
             status_code=400,
             detail=f"담당자 등록 중 오류가 발생했습니다. {str(e)}"
+        )
+    
+@router.get("/api/programs/user-program")
+def get_programs(
+    limit: int = 20, 
+    db: Session = Depends(get_db),
+    current_user: str = Depends(token.get_current_user),
+    ):
+    try:
+        # 현재 유저의 user_id 가져오기
+        query_user = """
+        SELECT id FROM users WHERE username = :username
+        """
+        result = db.execute(text(query_user), {"username": current_user}).mappings().fetchone()
+
+        if not result:
+            return {"message": "유저 정보를 찾을 수 없습니다."}
+        
+        user_id = result["id"]
+
+        # 도서관 프로그램 조회 쿼리
+        query = """
+        SELECT id, name, description, event_date, participants, image
+        FROM programs WHERE id IN (
+        SELECT program_id from program_participants
+        WHERE user_id = :user_id)
+        ORDER BY event_date ASC
+        LIMIT :limit
+        """
+        results = db.execute(text(query), {"user_id": user_id, "limit": limit}).mappings().fetchall()
+
+
+        # 결과를 JSON 형식으로 변환
+        programs = [
+            {
+                "id": row["id"],
+                "name": row["name"],
+                "description": row["description"],
+                "event_date": row["event_date"],
+                "participants": row["participants"],
+                "image": row["image"]
+            }
+            for row in results
+        ]
+
+        return programs
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"프로그램 정보를 가져오는 중 오류가 발생했습니다. {str(e)}"
+        )
+    
+@router.delete("/api/programs/{program_id}/participants")
+def delete_program(
+    program_id: int,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(token.get_current_user),
+):
+    try:
+        # 현재 유저의 user_id 가져오기
+        query_user = """
+        SELECT id FROM users WHERE username = :username
+        """
+        result = db.execute(text(query_user), {"username": current_user}).mappings().fetchone()
+
+        if not result:
+            return {"message": "유저 정보를 찾을 수 없습니다."}
+        
+        user_id = result["id"]
+
+        query_delete_participant = """
+        DELETE FROM program_participants WHERE program_id = :program_id AND user_id = :user_id
+        """
+        db.execute(text(query_delete_participant), {"program_id": program_id, "user_id": user_id})
+        db.commit()
+
+        return {"id": program_id, "message": "프로그램 취소가 완료되었습니다."}
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail=f"프로그램을 취소하는 중 오류가 발생했습니다. {str(e)}"
         )

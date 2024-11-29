@@ -21,6 +21,10 @@ function Programs() {
     const handleMoreClick = (newLimit) => {
         setLimit(newLimit);
     };
+    const[countBook, setCountBook] = useState(21);
+    const handleCalcCount = (newCount) => {
+        setCountBook(newCount);
+    }
     return (
         <Frame>
             <Header/>
@@ -32,8 +36,9 @@ function Programs() {
             />
             <ProgramList 
                 limit={limit}
+                countBook={handleCalcCount}
             />
-            <LoadButton limit={limit} onMoreClick={handleMoreClick} />
+            { limit<countBook && <LoadButton limit={limit} onMoreClick={handleMoreClick} /> }
             <BottomImage/>
         </Frame>
     );

@@ -8,7 +8,7 @@ import os
 # JWT 설정
 SECRET_KEY = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" 
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 # 60분동안 토큰이 유효함
+ACCESS_TOKEN_EXPIRE_MINUTES = 180 # 180분동안 토큰이 유효함
 
 # JWT 토큰 생성
 def create_access_token(data: dict):
@@ -27,6 +27,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         if username is None:
             raise HTTPException(status_code=401, detail="Invalid token")
         return username
-    except JWTError:
+    except JWTError as e:
+        print(f"토큰 인증 실패: {str(e)}")
         raise HTTPException(status_code=401, detail="Invalid token")
     
