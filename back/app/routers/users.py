@@ -174,7 +174,7 @@ def withdraw(
 def get_book_details(user_id: int, db: Session = Depends(get_db)):
     try:
         query = """
-        SELECT username
+        SELECT name
         FROM users
         WHERE id = :user_id
         """
@@ -182,7 +182,7 @@ def get_book_details(user_id: int, db: Session = Depends(get_db)):
         if not result:
             raise HTTPException(status_code=404, detail="책 정보가 없습니다.")
         return{
-            "username" : result["username"]
+            "username" : result["name"]
         }
     except Exception as e:
         raise HTTPException(
