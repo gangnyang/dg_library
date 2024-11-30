@@ -12,7 +12,7 @@ from pytz import timezone
 router = APIRouter()
 
 # MySQL 데이터베이스 연결 정보
-DATABASE_URL = "mysql+pymysql://root:sang8429@localhost:3306/dg_library"
+DATABASE_URL = "mysql+pymysql://root:sang8429@svc.sel4.cloudtype.app:31721/dg_library"
 
 # SQLAlchemy 설정
 engine = create_engine(DATABASE_URL)
@@ -259,6 +259,7 @@ def delete_comment(
         return{"message": "댓글 삭제가 완료되었습니다."}
     except Exception as e:
         db.rollback()
+        print(f"댓글 삭제 중 오류가 발생했습니다. {str(e)}")
         raise HTTPException(
             status_code=400,
             detail=f"댓글 삭제 중 오류가 발생했습니다. {str(e)}"

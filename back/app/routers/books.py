@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 router = APIRouter()
 
 # MySQL 데이터베이스 연결 정보
-DATABASE_URL = "mysql+pymysql://root:sang8429@localhost:3306/dg_library"
+DATABASE_URL = "mysql+pymysql://root:sang8429@svc.sel4.cloudtype.app:31721/dg_library"
 
 # SQLAlchemy 설정
 engine = create_engine(DATABASE_URL)

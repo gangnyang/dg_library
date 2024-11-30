@@ -66,6 +66,20 @@ function Comment({comment, mode, onUpdate}) {
         setShowEditInput((prev) => false);
         setShowReplyInput((prev) => !prev);
     };
+    const handleDeleteClick= () => {
+        axios
+            .delete(`http://127.0.0.1:8000/api/comments/${comment.id}`, 
+                {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            })
+            .then((response) => {
+                alert("댓글 삭제가 완료되었습니다.");
+                onUpdate();
+            })
+            .catch((error) => alert("댓글 삭제에 실패했습니다. 사유: "+ error));
+    };
     return (
         <div className="Comment_frame">
             <div className="Comment_userFrame">
@@ -83,6 +97,7 @@ function Comment({comment, mode, onUpdate}) {
                     <p className="Comment_updated">{comment.updated}</p>
                     <button className="Comment_reply" onClick={handleEditClick}>수정</button>
                     {mode==="parent" && <button className="Comment_reply" onClick={handleReplyClick} >답글</button>}
+                    <button className="Comment_reply" onClick={handleDeleteClick}>삭제</button>
                 </div>
             </div>
 
