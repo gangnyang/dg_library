@@ -2,8 +2,8 @@
     position: relative;
     display: flex;
     flex-direction: row; /* 요소를 수직으로 배치 */
-    width: 90vw;
-    height: 50vh;
+    width: 100%;
+    height: auto;
     margin-top: 3%;
     left:15%;
 }
@@ -11,7 +11,7 @@
 .BookInfo_imageBox{
     position: relative;
     width: 30%;
-    height: 70%;
+    height: auto;
     overflow: hidden; /* 박스 밖으로 나간 부분 숨기기 */
     display: flex;
     align-items: center;

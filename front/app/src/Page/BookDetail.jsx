@@ -27,7 +27,7 @@ function BookDetail(){
                 ButtonText="대출 신청"
             />
             <CommentList
-                book_id={id}
+                Book_id={id}
             />
             <BottomImage />
         </Frame>

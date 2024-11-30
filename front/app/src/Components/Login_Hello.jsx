@@ -7,8 +7,9 @@ function Login_Hello(){
             <div className="sidenav-bg">
                 <h1 className="LoginHelloTitle">도서관에 오신 걸 환영해요</h1>
                 <p className="LoginHelloDescription">도서관 서비스를 이용하시려면 로그인이 필요해요</p>
-                <img className="LoginHelloImage" src='/images/login_image.jpg' alt='login_image'/>
+                
             </div>
+            <img className="LoginHelloImage" src='/images/login_image.jpg' alt='login_image'/>
         </section>
     )
 }

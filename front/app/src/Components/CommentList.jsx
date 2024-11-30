@@ -5,14 +5,14 @@ import './css/CommentList.css';
 import axios from "axios";
 import { useToken } from "../TokenContext";
 
-function CommentList({book_id}){
+function CommentList({Book_id}){
     const [comments, setComments] = useState([]);
     const [count, setCount] = useState(0);
     const [text, setText] = useState("");
     const {token} = useToken();
     const fetchComments = () => {
         axios
-            .get(`http://127.0.0.1:8000/api/comments?book_id=${book_id}`, {
+            .get(`http://127.0.0.1:8000/api/comments?book_id=${Book_id}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 }
@@ -22,17 +22,20 @@ function CommentList({book_id}){
                 setCount(response.data["count"]); // 댓글 개수
                 console.log(token);
             })
-            .catch((error) => console.error("댓글 가져오기 실패:", error));
+            .catch((error) => { 
+                console.error("댓글 가져오기 실패:", error);
+                console.error(Book_id);
+            });
     };
 
     useEffect(() => {
         fetchComments();
-    }, [book_id]);
+    }, [Book_id]);
 
     const handleSubmitClick = () => {
         axios
             .post(`http://127.0.0.1:8000/api/comments/add`,
-                { book_id: book_id, context: text.trim() }, {
+                { book_id: Book_id, context: text.trim() }, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                     "Content-Type": "application/json",
