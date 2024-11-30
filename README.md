@@ -19,4 +19,4 @@ npm start
 
 
 사용한 스택 <br/>
-[![stackticon](https://firebasestorage.googleapis.com/v0/b/stackticon-81399.appspot.com/o/images%2F1732949903681?alt=media&token=0f79f191-2373-499c-99d4-98f6fe4d1680)](https://github.com/msdio/stackticon)
+[![stackticon](https://firebasestorage.googleapis.com/v0/b/stackticon-81399.appspot.com/o/images%2F1732969558308?alt=media&token=2accb3e0-9253-49e2-b1ac-11fd9f9d039a)](https://github.com/msdio/stackticon)
